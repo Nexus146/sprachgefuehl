@@ -1,0 +1,19 @@
+.toolchain/
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+*.apk
+keystore.properties
+*.jks
+.idea/
+.DS_Store
+
+# Arbeitsmaterial – gehört nicht ins öffentliche Repo.
+# .cloud-attachments enthält Screenshots mit persönlicher E-Mail-Adresse und eine alte
+# Chat-Sicherung mit Zugangsdaten aus dem verworfenen Konto-Versuch.
+.cloud-attachments/
+screenshots/
+.tmp/
+*.log
