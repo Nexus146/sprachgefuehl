@@ -110,6 +110,10 @@ git status          # kontrollieren, was mitkommt
 git commit -m "Sprachgefühl 1.0"
 ```
 
+> **Bereits erledigt.** Das lokale Repo existiert, der erste Commit `Sprachgefühl 1.0` liegt
+drin, unterschrieben mit `Sprachgefuehl <sprachgefuehl@users.noreply.github.com>` (nur lokal
+gesetzt, nicht global). Es fehlt nur noch das Hochladen zu GitHub.
+
 Vor dem Hochladen prüfen, dass **nicht** dabei ist (steht alles in `.gitignore`):
 
 | Nicht ins öffentliche Repo | Warum |
