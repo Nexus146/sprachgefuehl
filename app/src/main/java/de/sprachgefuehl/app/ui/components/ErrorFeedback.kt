@@ -45,7 +45,8 @@ fun FeedbackPanel(
     val colors = MaterialTheme.colorScheme
     val background = when (tone) {
         FeedbackTone.GOOD -> colors.primaryContainer
-        FeedbackTone.ALMOST -> colors.secondaryContainer
+        // „Fast“ ist ein guter Zwischenstand, kein Fehler: warmes Gelb statt Terrakotta.
+        FeedbackTone.ALMOST -> LocalSprachColors.current.highlight
         FeedbackTone.RETRY -> colors.surfaceVariant
     }
     Surface(

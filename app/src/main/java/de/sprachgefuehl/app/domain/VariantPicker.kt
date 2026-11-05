@@ -7,6 +7,9 @@ import kotlin.random.Random
 /**
  * Picks the story a learner meets. The same seed always gives the same answer, so the world
  * stays stable between two app starts; different learners get different stories.
+ *
+ * [tags] are story tags, not profile ids: the profile translates its answers through
+ * [ProfileCatalog.storyTags] first, so "Bewegung & Gesundheit" opens the health stories.
  */
 object VariantPicker {
 
@@ -14,23 +17,23 @@ object VariantPicker {
     fun resolve(
         situation: Situation,
         seed: Long,
-        interests: Set<String>,
+        tags: Set<String>,
         chosenId: String?
     ): SituationVariant? {
         if (chosenId != null) {
             situation.variants.firstOrNull { it.id == chosenId }?.let { return it }
         }
-        return forSituation(situation, seed, interests)
+        return forSituation(situation, seed, tags)
     }
 
     fun forSituation(
         situation: Situation,
         seed: Long,
-        interests: Set<String> = emptySet()
+        tags: Set<String> = emptySet()
     ): SituationVariant? {
         if (situation.variants.isEmpty()) return null
         val preferred = situation.variants.filter {
-            it.interestId.isNotBlank() && it.interestId in interests
+            it.interestId.isNotBlank() && it.interestId in tags
         }
         val pool = preferred.ifEmpty { situation.variants }
         // An explicit seed of 0 means "not chosen yet": the situation id alone keeps it stable.

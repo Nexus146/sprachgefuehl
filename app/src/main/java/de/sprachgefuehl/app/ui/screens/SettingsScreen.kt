@@ -2,8 +2,10 @@ package de.sprachgefuehl.app.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import de.sprachgefuehl.app.AppUiState
@@ -37,10 +43,15 @@ import de.sprachgefuehl.app.BuildConfig
 import de.sprachgefuehl.app.Screen
 import de.sprachgefuehl.app.data.Backup
 import de.sprachgefuehl.app.data.BackupContent
+import de.sprachgefuehl.app.domain.LearningOverview
+import de.sprachgefuehl.app.domain.LessonMixer
+import de.sprachgefuehl.app.domain.SkillCatalog
+import de.sprachgefuehl.app.domain.TaskFormats
 import de.sprachgefuehl.app.ui.components.BigButton
 import de.sprachgefuehl.app.ui.components.DividerLine
 import de.sprachgefuehl.app.ui.components.ScreenHeader
 import de.sprachgefuehl.app.ui.components.SoftCard
+import de.sprachgefuehl.app.ui.components.StatRow
 import de.sprachgefuehl.app.ui.speech.rememberSpeechController
 import de.sprachgefuehl.app.ui.theme.Spacing
 
@@ -51,9 +62,14 @@ import de.sprachgefuehl.app.ui.theme.Spacing
 @Composable
 fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
     val settings = state.progress.settings
+    val overview = state.content?.let { content ->
+        LearningOverview.of(content, state.progress, vm.repository?.now() ?: System.currentTimeMillis())
+    }
     val speech = rememberSpeechController()
     val context = LocalContext.current
     var confirmReset by rememberSaveable { mutableStateOf(false) }
+    var poolOpen by rememberSaveable { mutableStateOf(false) }
+    var skillsOpen by rememberSaveable { mutableStateOf(false) }
     var status by rememberSaveable { mutableStateOf("") }
     // The picked file is only read into memory here; nothing changes until the learner confirms.
     var pendingImport by remember { mutableStateOf<BackupContent?>(null) }
@@ -234,6 +250,108 @@ fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
             Spacer(Modifier.height(Spacing.l))
             DividerLine()
             Spacer(Modifier.height(Spacing.l))
+
+            Text("Dein Lernweg", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(Spacing.s))
+            Text(
+                "Nur zum Nachlesen. Zugeklappt, damit der Stand ruhig bleibt.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(Spacing.s))
+            if (overview != null) {
+                CollapsibleInfo(
+                    title = "Dein Aufgabenpool",
+                    summary = "${overview.pool.chunks} Bausteine · ${overview.pool.lessons} Lektionen · ${overview.pool.formats} Formate",
+                    expanded = poolOpen,
+                    onToggle = { poolOpen = !poolOpen }
+                ) {
+                    Text(
+                        "${overview.pool.patterns} Muster · ${LessonMixer.MIN_TASKS}–${LessonMixer.MAX_TASKS} Aufgaben pro Runde",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(Spacing.s))
+                    StatRow(
+                        listOf(
+                            "${overview.pool.collected}" to "in deiner Sammlung",
+                            "${overview.pool.stable}" to "sicher",
+                            "${overview.pool.due}" to "fällig"
+                        )
+                    )
+                    if (overview.pool.learning > 0) {
+                        Spacer(Modifier.height(Spacing.xs))
+                        Text(
+                            "${overview.pool.learning} Bausteine sind noch im Aufbau.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.height(Spacing.s))
+                    Text(
+                        TaskFormats.all.joinToString(" · ") { it.label },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (overview.focus.isNotEmpty()) {
+                        Spacer(Modifier.height(Spacing.xs))
+                        Text(
+                            "Übt besonders: " + overview.focus.joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        "Jede Runde wird neu gemischt: Deine Startantworten gewichten, Fehler kommen zurück, sichere Sätze werden abgefragt.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(Spacing.s))
+                CollapsibleInfo(
+                    title = "Dein Können",
+                    summary = "Fünf Bereiche – Stufen und Bewegung",
+                    expanded = skillsOpen,
+                    onToggle = { skillsOpen = !skillsOpen }
+                ) {
+                    overview.skills.forEach { view ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                view.skill.tab,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                SkillCatalog.stageLabel(view.stage),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        val movement = overview.movements.firstOrNull { it.skill == view.skill }
+                        Text(
+                            movement?.sentence() ?: view.meaning,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(Spacing.xs))
+                    }
+                    Text(
+                        "Die Stufen wachsen mit dem, was du wirklich tust – nicht mit einer einzelnen Aufgabe.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(Spacing.m))
+                    BigButton(
+                        "Sprachprofil im Detail",
+                        { vm.navigate(Screen.SkillProfile) },
+                        secondary = true
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Spacing.l))
+            DividerLine()
+            Spacer(Modifier.height(Spacing.l))
             Text("Über", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.s))
             Text(
@@ -326,6 +444,43 @@ private fun SettingRow(
             )
         }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun CollapsibleInfo(
+    title: String,
+    summary: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    SoftCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onToggle)
+                .padding(vertical = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                contentDescription = if (expanded) "Zuklappen" else "Aufklappen",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        if (expanded) {
+            Spacer(Modifier.height(Spacing.s))
+            content()
+        }
     }
 }
 

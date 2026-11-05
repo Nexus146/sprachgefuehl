@@ -50,12 +50,20 @@ data class RecordingRef(
 data class Profile(
     val name: String = "",
     val reasonId: String = "",
+    /** Mehrere Gründe sind erlaubt – ein Leben hat selten nur einen. */
+    val reasonIds: Set<String> = emptySet(),
     val interests: Set<String> = emptySet(),
     val dailyMinutes: Int = 10,
     val weekdays: Set<Int> = setOf(1, 2, 3, 4, 5, 6, 7),
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    /** Epoch day of the last "passt noch" answer. 0 means it was never confirmed. */
+    val reviewedDay: Long = 0L
 ) {
     val greetingName: String get() = name.trim().take(24)
+
+    /** Alle Gründe – alte Sicherungen kennen nur den einen [reasonId]. */
+    fun reasons(): Set<String> =
+        reasonIds.ifEmpty { setOfNotNull(reasonId.takeIf { it.isNotBlank() }) }
 }
 
 /**
@@ -112,6 +120,24 @@ data class Settings(
     val germanSupport: Boolean = true
 )
 
+/**
+ * Ein Satz, der zuletzt nicht saß. Er wird in einer späteren Lektion wieder aufgegriffen – mit
+ * dem, was damals tatsächlich gesagt wurde, damit die Wiederholung nicht beliebig wirkt.
+ */
+@Serializable
+data class Mistake(
+    val chunkId: String = "",
+    val lessonId: String = "",
+    val lessonTitle: String = "",
+    val target: String = "",
+    val heard: String = "",
+    /** Epochentag, damit „zuletzt“ auch nach einem Neustart stimmt. */
+    val day: Long = 0L,
+    /** Skill-ID (hoeren, grammatik, …) – daraus wählt der Mixer das Wiederholungsformat. */
+    val skill: String = "",
+    val cardId: String = ""
+)
+
 @Serializable
 data class Progress(
     val onboarded: Boolean = false,
@@ -138,10 +164,30 @@ data class Progress(
     /** Decides which story a learner meets. Set once, so the world stays stable. */
     val seed: Long = 0L,
     /** The story chosen per situation. Kept so it does not change between two app starts. */
-    val variantIds: Map<String, String> = emptyMap()
+    val variantIds: Map<String, String> = emptyMap(),
+    /** The one-time hint that explains the home screen. Only an explanation, never a gate. */
+    val homeIntroSeen: Boolean = false,
+    /** Wie oft eine Lektion schon begonnen wurde – dreht den Aufgabenpool weiter. */
+    val lessonRuns: Map<String, Int> = emptyMap(),
+    /** Wirklich gemessene Lernzeit in Sekunden, nicht geschätzt. */
+    val studySeconds: Int = 0,
+    /** Gemessene Sekunden je Kalendertag (Epochentag). */
+    val timeByDay: Map<Long, Int> = emptyMap(),
+    /** Offene Fehler, die in späteren Lektionen zurückkommen – der jüngste zuerst. */
+    val mistakes: List<Mistake> = emptyList()
 ) {
     val totalSpeakingTasks: Int get() = sessions.sumOf { it.speakingTasks }
     val totalMinutes: Int get() = sessions.sumOf { it.minutes }
+
+    fun studiedSecondsOn(day: Long): Int = timeByDay[day] ?: 0
+
+    /** Gemessene Minuten eines Tages; nie kleiner als die tatsächlich angefangene Minute. */
+    fun measuredMinutesOn(day: Long): Int {
+        val seconds = studiedSecondsOn(day)
+        return if (seconds <= 0) minutesOn(day) else (seconds + 59) / 60
+    }
+
+    val measuredMinutes: Int get() = (studySeconds + 59) / 60
 
     fun memoryFor(chunkId: String): Memory = chunkMemory[chunkId] ?: Memory()
 

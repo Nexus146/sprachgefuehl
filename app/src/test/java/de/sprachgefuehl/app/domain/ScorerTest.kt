@@ -71,4 +71,34 @@ class ScorerTest {
         )
         assertEquals(3, result.grade)
     }
+
+    @Test
+    fun `strict dictation rejects half a sentence`() {
+        val result = Scorer.score(
+            target = "I have a bad headache tomorrow morning",
+            heard = "I have a bad headache",
+            strict = true
+        )
+        assertTrue("Halber Satz galt als bestanden: ${result.grade}", result.grade < 2)
+    }
+
+    @Test
+    fun `strict dictation rewards the full sentence`() {
+        val result = Scorer.score(
+            target = "I have a bad headache tomorrow morning",
+            heard = "I have a bad headache tomorrow morning",
+            strict = true
+        )
+        assertEquals(3, result.grade)
+    }
+
+    @Test
+    fun `strict dictation still allows one small slip`() {
+        val result = Scorer.score(
+            target = "I have a bad headache tomorrow morning",
+            heard = "I have bad headache tomorrow morning",
+            strict = true
+        )
+        assertEquals(2, result.grade)
+    }
 }

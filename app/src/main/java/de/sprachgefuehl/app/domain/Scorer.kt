@@ -65,7 +65,9 @@ object Scorer {
         heard: String,
         requiredForm: List<String> = emptyList(),
         accept: List<String> = emptyList(),
-        usedHint: Boolean = false
+        usedHint: Boolean = false,
+        /** Diktat und Tippen: halbe Sätze gelten hier nicht als „fast geschafft“. */
+        strict: Boolean = false
     ): ScoreResult {
         val heardTokens = normalize(heard)
         val spoken = heard.trim()
@@ -83,14 +85,14 @@ object Scorer {
         val variants = (listOf(target) + accept).distinct()
         var best: VariantScore? = null
         for (variant in variants) {
-            val candidate = evaluate(variant, heardTokens, requiredForm)
+            val candidate = evaluate(variant, heardTokens, requiredForm, strict)
             if (best == null || candidate.grade > best.grade ||
                 (candidate.grade == best.grade && candidate.ratio > best.ratio)
             ) {
                 best = candidate
             }
         }
-        val chosen = best ?: evaluate(target, heardTokens, requiredForm)
+        val chosen = best ?: evaluate(target, heardTokens, requiredForm, strict)
         val formMissing = requiredForm.filter { req ->
             val reqTokens = normalize(req)
             reqTokens.isNotEmpty() && reqTokens.none { it in heardTokens }
@@ -123,7 +125,12 @@ object Scorer {
         )
     }
 
-    private fun evaluate(target: String, heard: List<String>, requiredForm: List<String>): VariantScore {
+    private fun evaluate(
+        target: String,
+        heard: List<String>,
+        requiredForm: List<String>,
+        strict: Boolean
+    ): VariantScore {
         val targetTokens = normalize(target).distinct()
         val heardSet = heard.toSet()
         if (targetTokens.isEmpty()) return VariantScore(3, 1.0, emptyList())
@@ -139,10 +146,18 @@ object Scorer {
         // („How are you?“) sind fast alle Wörter Funktionswörter – dann reichte früher das eine
         // Inhaltswort, und ein halber Satz galt als perfekt. Darum braucht die beste Stufe auch
         // eine Deckung über den ganzen Satz.
-        val grade = when {
-            ratio >= 0.9 || (contentRatio >= 0.85 && ratio >= 0.6) -> 3
-            ratio >= 0.55 || contentRatio >= 0.6 -> 2
-            else -> 1
+        val grade = if (strict) {
+            when {
+                ratio >= 0.95 && contentRatio >= 0.9 -> 3
+                ratio >= 0.8 && contentRatio >= 0.75 -> 2
+                else -> 1
+            }
+        } else {
+            when {
+                ratio >= 0.9 || (contentRatio >= 0.85 && ratio >= 0.6) -> 3
+                ratio >= 0.55 || contentRatio >= 0.6 -> 2
+                else -> 1
+            }
         }
         return VariantScore(grade, maxOf(ratio, contentRatio), missing)
     }

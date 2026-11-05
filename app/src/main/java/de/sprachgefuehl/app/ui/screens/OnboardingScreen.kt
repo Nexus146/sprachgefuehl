@@ -78,7 +78,7 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
         )
     }
     var name by rememberSaveable { mutableStateOf(profile.name) }
-    var reasonId by rememberSaveable { mutableStateOf(profile.reasonId) }
+    var reasons by rememberSaveable { mutableStateOf(profile.reasons()) }
     var interests by rememberSaveable { mutableStateOf(profile.interests) }
     var minutes by rememberSaveable { mutableIntStateOf(profile.dailyMinutes) }
     var weekdays by rememberSaveable { mutableStateOf(profile.weekdays) }
@@ -102,7 +102,8 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
         vm.updateProfile {
             it.copy(
                 name = name.trim().take(24),
-                reasonId = reasonId,
+                reasonId = reasons.firstOrNull().orEmpty(),
+                reasonIds = reasons,
                 interests = interests,
                 dailyMinutes = minutes,
                 weekdays = weekdays.ifEmpty { it.weekdays }
@@ -145,7 +146,7 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                 }
                 Spacer(Modifier.height(Spacing.m))
                 Text(
-                    "Du kannst nichts verlieren. Es gibt keine Herzen, keine Serien, keinen Zeitdruck.",
+                    "Du kannst nichts verlieren. Es gibt keine Herzen, keinen Zeitdruck. Eine Tagesstreak zeigt nur, was du geschafft hast.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -180,7 +181,6 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                     value = name,
                     onValueChange = { name = it.take(24) },
                     label = { Text("Dein Name") },
-                    placeholder = { Text("z. B. Ingrid") },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.fillMaxWidth()
@@ -198,7 +198,8 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                 Text("Warum möchtest du Englisch lernen?", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    "Das entscheidet nur, welche Begegnungen zuerst kommen. Jede Lektion bleibt offen.",
+                    "Das entscheidet, welche Begegnungen zuerst kommen – und in welchen Geschichten. " +
+                        "Gesperrt bleibt nichts.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -210,11 +211,39 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                     ProfileCatalog.reasons.forEach { choice ->
                         Tag(
                             text = choice.label,
-                            active = reasonId == choice.id,
-                            onClick = { reasonId = if (reasonId == choice.id) "" else choice.id }
+                            active = choice.id in reasons,
+                            onClick = {
+                                reasons = if (choice.id in reasons) reasons - choice.id else reasons + choice.id
+                            }
                         )
                     }
                 }
+                // Die Folge steht direkt unter der Antwort: keine Frage ohne sichtbare Wirkung.
+                Spacer(Modifier.height(Spacing.s))
+                Text(
+                    if (reasons.isEmpty()) {
+                        "Noch nichts gewählt – dann geht der Weg der Reihe nach."
+                    } else {
+                        "✓ Gemerkt · Das ändert: " + ProfileCatalog.reasonEffects(reasons).joinToString(" ")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                val reasonFocus = ProfileCatalog.focusLabels(reasons)
+                if (reasonFocus.isNotEmpty()) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        "Übt besonders: " + reasonFocus.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Du kannst mehrere Gründe wählen – tippe sie einfach nacheinander an.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 Spacer(Modifier.height(Spacing.xl))
                 BigButton("Weiter", {
@@ -235,6 +264,14 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (reasons.isNotEmpty()) {
+                    Spacer(Modifier.height(Spacing.s))
+                    Text(
+                        "✓ Übernommen: " + ProfileCatalog.reasonLabels(reasons).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 Spacer(Modifier.height(Spacing.l))
                 Text("Interessen", style = MaterialTheme.typography.titleLarge)
@@ -252,6 +289,26 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                             }
                         )
                     }
+                }
+
+                Spacer(Modifier.height(Spacing.s))
+                Text(
+                    if (interests.isEmpty()) {
+                        "Ohne Auswahl kommen alle Geschichten gleich oft."
+                    } else {
+                        "✓ Gemerkt · Das ändert: " + ProfileCatalog.interestEffects(interests).joinToString(" ")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                val interestFocus = ProfileCatalog.focusLabels(reasons + interests)
+                if (interestFocus.isNotEmpty()) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        "Übt besonders: " + interestFocus.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Spacer(Modifier.height(Spacing.l))
@@ -287,7 +344,11 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                 }
                 Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    "Keine Erinnerungen, keine Serien. Ein Pausentag ist in Ordnung.",
+                    if (weekdays.isNotEmpty()) {
+                        "✓ Gemerkt: ${ProfileCatalog.weekdaysLabel(weekdays)}. Keine Erinnerungen, ein Pausentag ist in Ordnung."
+                    } else {
+                        "Keine Erinnerungen. Wähle die Tage, an denen du eher Zeit hast."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

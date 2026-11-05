@@ -4,6 +4,7 @@ import de.sprachgefuehl.app.domain.Checkup
 import de.sprachgefuehl.app.domain.Garden
 import de.sprachgefuehl.app.domain.Milestone
 import de.sprachgefuehl.app.domain.Milestones
+import de.sprachgefuehl.app.domain.Personalization
 import de.sprachgefuehl.app.domain.Skill
 import de.sprachgefuehl.app.domain.SkillHistory
 import de.sprachgefuehl.app.domain.Skills
@@ -68,6 +69,21 @@ class LearningRepository(
         progress.copy(checkup = after, skills = skills)
     }
 
+    /**
+     * Gemessene Zeit, nicht geschätzt: Sie landet am Tag und im Gesamtwert. Ein zweiter Aufruf
+     * für dieselben Sekunden ist ausgeschlossen, weil die Oberfläche nur einmal abrechnet.
+     */
+    fun recordLearningTime(seconds: Int) {
+        if (seconds <= 0) return
+        val day = now() / Srs.DAY_MS
+        update { progress ->
+            progress.copy(
+                studySeconds = progress.studySeconds + seconds,
+                timeByDay = progress.timeByDay + (day to ((progress.timeByDay[day] ?: 0) + seconds))
+            )
+        }
+    }
+
     fun finishCheckup(selfRating: Int) = update { progress ->
         val state = progress.checkup
         val skills = if (state.results.isEmpty()) {
@@ -97,7 +113,7 @@ class LearningRepository(
         val variant = VariantPicker.forSituation(
             situation = situation,
             seed = _progress.value.seed,
-            interests = _progress.value.profile.interests
+            tags = Personalization.storyTagsFor(_progress.value.profile)
         ) ?: return null
         update { it.copy(variantIds = it.variantIds + (situationId to variant.id)) }
         return variant
@@ -108,6 +124,13 @@ class LearningRepository(
     fun updateSettings(transform: (Settings) -> Settings) = update { it.copy(settings = transform(it.settings)) }
 
     fun updateProfile(transform: (Profile) -> Profile) = update { it.copy(profile = transform(it.profile)) }
+
+    fun markHomeIntroSeen() = update { it.copy(homeIntroSeen = true) }
+
+    /** "Passt noch" – the profile is confirmed without changing a thing. */
+    fun markProfileReviewed() = update {
+        it.copy(profile = it.profile.copy(reviewedDay = now() / Srs.DAY_MS))
+    }
 
     fun updatePlacementLevel(level: Int) = update { it.copy(placementLevel = level.coerceIn(0, 2)) }
 
@@ -163,21 +186,63 @@ class LearningRepository(
         }
     }
 
+    /**
+     * Ein Fehler wird nicht nur gezählt, sondern mit Satz und Gehörtem gemerkt. Pro Baustein
+     * bleibt der jüngste Eintrag; die Liste ist begrenzt, damit eine Sicherung klein bleibt.
+     */
+    fun recordMistake(
+        chunkId: String,
+        lessonId: String,
+        lessonTitle: String,
+        target: String,
+        heard: String,
+        skill: String,
+        cardId: String
+    ) {
+        if (chunkId.isBlank()) return
+        val day = now() / Srs.DAY_MS
+        update { progress ->
+            val entry = Mistake(
+                chunkId = chunkId,
+                lessonId = lessonId,
+                lessonTitle = lessonTitle,
+                target = target,
+                heard = heard.trim().take(120),
+                day = day,
+                skill = skill,
+                cardId = cardId
+            )
+            val list = (progress.mistakes.filterNot { it.chunkId == chunkId } + entry).takeLast(24)
+            progress.copy(mistakes = list)
+        }
+    }
+
+    /** Eine richtige Antwort auf einen eingestreuten Satz schließt den Eintrag. */
+    fun resolveMistake(chunkId: String) {
+        if (chunkId.isBlank()) return
+        update { progress ->
+            progress.copy(mistakes = progress.mistakes.filterNot { it.chunkId == chunkId })
+        }
+    }
+
     fun markCanDo(id: String) = update { it.copy(canDo = it.canDo + id) }
 
     /**
      * [speakingTasks] zählt nur, was die Lernende wirklich gesprochen hat – ein mit "Weiter"
      * übersprungener Sprechschritt ist keine Sprechaufgabe.
      */
-    fun completeLesson(lesson: Lesson, speakingTasks: Int): Boolean {
+    fun completeLesson(lesson: Lesson, speakingTasks: Int, seconds: Int = 0): Boolean {
         val before = _progress.value
         if (lesson.id in before.completedLessons) return false
         val canDoIds = content.canDo.filter { it.lessonId == lesson.id }.map { it.id }.toSet()
         val day = now() / Srs.DAY_MS
+        // Gemessene Zeit ersetzt die Schätzung, sobald es eine gibt.
+        val minutes = if (seconds > 0) max(1, (seconds + 59) / 60) else lesson.xpMinutes
         update { progress ->
             val withLesson = progress.copy(
                 completedLessons = progress.completedLessons + lesson.id,
-                canDo = progress.canDo + canDoIds
+                canDo = progress.canDo + canDoIds,
+                lessonRuns = progress.lessonRuns + (lesson.id to ((progress.lessonRuns[lesson.id] ?: 0) + 1))
             )
             // Die Sätze der Lektion gehören ab jetzt zur Sammlung – auch wenn diesmal nicht
             // gesprochen wurde. Sonst hätte eine Lektion ohne Mikrofon nichts zum Wiederholen.
@@ -186,15 +251,16 @@ class LearningRepository(
                 else acc.copy(chunkMemory = acc.chunkMemory + (id to Memory(due = now())))
             }
             Garden.recordSession(
-                seeded, day, lesson.xpMinutes, speakingTasks, lesson.chunkIds.size
+                seeded, day, minutes, speakingTasks, lesson.chunkIds.size
             )
         }
         return true
     }
 
-    fun recordReviewSession(minutes: Int, speakingTasks: Int) {
+    fun recordReviewSession(minutes: Int, speakingTasks: Int, seconds: Int = 0) {
         val day = now() / Srs.DAY_MS
-        update { progress -> Garden.recordSession(progress, day, minutes, speakingTasks, 0) }
+        val measured = if (seconds > 0) max(1, (seconds + 59) / 60) else minutes
+        update { progress -> Garden.recordSession(progress, day, measured, speakingTasks, 0) }
     }
 
     fun addRecording(label: String, path: String) = update { progress ->

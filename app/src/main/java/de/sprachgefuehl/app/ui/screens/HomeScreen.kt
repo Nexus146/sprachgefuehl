@@ -1,11 +1,10 @@
 package de.sprachgefuehl.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,45 +15,65 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
-import de.sprachgefuehl.app.domain.Checkup
 import de.sprachgefuehl.app.domain.DailyPlan
 import de.sprachgefuehl.app.domain.DayMood
-import de.sprachgefuehl.app.domain.FocusTarget
 import de.sprachgefuehl.app.domain.Garden
+import de.sprachgefuehl.app.domain.Journey
+import de.sprachgefuehl.app.domain.JourneyPlanner
+import de.sprachgefuehl.app.domain.LessonMixer
+import de.sprachgefuehl.app.domain.NextAction
+import de.sprachgefuehl.app.domain.NextKind
+import de.sprachgefuehl.app.domain.NextPlanner
+import de.sprachgefuehl.app.domain.NextTarget
 import de.sprachgefuehl.app.domain.PathProgress
 import de.sprachgefuehl.app.domain.Personalization
 import de.sprachgefuehl.app.domain.Phrasing
+import de.sprachgefuehl.app.domain.ProfileCatalog
 import de.sprachgefuehl.app.domain.Srs
+import de.sprachgefuehl.app.domain.Streak
 import de.sprachgefuehl.app.domain.VariantPicker
 import de.sprachgefuehl.app.ui.components.BigButton
-import de.sprachgefuehl.app.ui.components.DailyRing
+import de.sprachgefuehl.app.ui.components.GardenFullscreen
 import de.sprachgefuehl.app.ui.components.GardenSummary
-import de.sprachgefuehl.app.ui.components.LinkCard
 import de.sprachgefuehl.app.ui.components.ProfileAvatar
-import de.sprachgefuehl.app.ui.components.SoftCard
 import de.sprachgefuehl.app.ui.components.RingSummary
-import de.sprachgefuehl.app.ui.components.StatRow
+import de.sprachgefuehl.app.ui.components.SoftCard
 import de.sprachgefuehl.app.ui.components.appIcon
-import de.sprachgefuehl.app.ui.components.plural
-import de.sprachgefuehl.app.ui.theme.LocalSprachColors
 import de.sprachgefuehl.app.ui.theme.Spacing
 import java.util.Calendar
 
+/**
+ * The home screen has one job: say what is next and how the path continues. So it carries four
+ * things – the recommendation, the path with two steps of foresight, today's goal and the garden –
+ * and one quiet list of rooms. The full course does not appear here; 104 lessons are a shelf, not
+ * an answer.
+ */
 @Composable
 fun HomeScreen(vm: AppViewModel, state: AppUiState) {
     val content = state.content ?: return
@@ -62,50 +81,58 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
     val profile = progress.profile
     val now = vm.repository?.now() ?: System.currentTimeMillis()
     val today = now / Srs.DAY_MS
-    val minutesToday = progress.minutesOn(today)
+    val minutesToday = progress.measuredMinutesOn(today)
     val goal = if (profile.dailyMinutes > 0) profile.dailyMinutes else 10
-    val suggestion = Personalization.suggestion(content, progress)
-    val next = suggestion?.lesson
-    val situation = next?.let { lesson -> content.situations.firstOrNull { it.id == lesson.situationId } }
+    val day = DailyPlan.summary(progress, today)
+    val step = NextPlanner.plan(content, progress, now)
+    val journey = JourneyPlanner.of(content, progress, step?.lessonId)
+
+    val lesson = step?.lessonId?.let { id -> content.lessons.firstOrNull { it.id == id } }
+    val situation = lesson?.let { current -> content.situations.firstOrNull { it.id == current.situationId } }
     val variant = situation?.let { current ->
         VariantPicker.resolve(
             situation = current,
             seed = progress.seed,
-            interests = progress.profile.interests,
+            tags = Personalization.storyTagsFor(profile),
             chosenId = progress.variantIds[current.id]
         )
     }
     val encounter = variant?.personaId?.takeIf { it.isNotBlank() }
         ?.let { id -> content.personas.firstOrNull { it.id == id } }
-        ?: suggestion?.encounter
     val story = variant?.story?.takeIf { it.isNotBlank() } ?: situation?.story.orEmpty()
+    val stepIndex = lesson?.let { progress.lessonProgress[it.id] ?: 0 } ?: 0
+    // Dieselbe Mischung wie im Unterricht: sonst stünde hier „Schritt 4 von 15“, während die
+    // Lektion nur elf Schritte hat.
+    val sessionSize = remember(lesson?.id, progress.seed, progress.lessonRuns[lesson?.id]) {
+        lesson?.let { LessonMixer.steps(it, content, progress, today).size } ?: 0
+    }
+    val afterNext = situation?.let { current -> PathProgress.nextInPath(content, progress, current.id) }
     val due = progress.chunkMemory.count { Srs.isDue(it.value, now) }
     val gardenStage = Garden.stage(progress)
-    val day = DailyPlan.summary(progress, today)
-    // The position comes from the lesson that is actually offered, not from a second opinion.
-    val nextPath = situation?.let { current -> content.paths.firstOrNull { it.id == current.pathId } }
-    val nextPosition = if (situation != null && nextPath != null) {
-        val index = content.situations
-            .filter { it.pathId == nextPath.id }
-            .sortedBy { it.order }
-            .indexOfFirst { it.id == situation.id }
-        if (index < 0) "" else "Situation ${index + 1} von ${content.situations.count { it.pathId == nextPath.id }}"
-    } else ""
-    val afterNext = situation?.let { PathProgress.nextInPath(content, progress, it.id) }
-    val resume = PathProgress.resumeLesson(content, progress)
-        ?.takeIf { (lesson, _) -> lesson.id != next?.id }
-    // Ist genau diese Begegnung schon angefangen, sagt die Karte das auch. Sonst liest sie sich
-    // wie etwas Neues mit 13 Schritten, obwohl es bei Schritt 7 weitergeht.
-    val nextStep = next?.let { progress.lessonProgress[it.id] ?: 0 } ?: 0
-    val nextIsStarted = next != null && nextStep in 1 until next.steps.size &&
-        next.id !in progress.completedLessons
-    val canDoItems = content.canDo.filter { it.id in progress.canDo }.takeLast(3)
-    val focus = vm.focusBlock()
-    val checkupOpen = progress.onboarded && progress.checkup.startedAt > 0L && !Checkup.isFinished(progress.checkup)
-    val hour = remember {
-        Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    }
+    val streak = Streak.of(progress, today)
+    val canDoItems = content.canDo.filter { it.id in progress.canDo }.takeLast(2)
+    val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greeting = Personalization.greeting(profile.greetingName, hour)
+
+    val reviewedDay = if (profile.reviewedDay > 0) profile.reviewedDay else profile.createdAt / Srs.DAY_MS
+    val reviewDue = profile.createdAt > 0L && today - reviewedDay >= 21 &&
+        (profile.reasons().isNotEmpty() || profile.interests.isNotEmpty())
+
+    fun go(action: NextAction) {
+        when (action.target) {
+            NextTarget.LESSON -> {
+                val id = action.lessonId
+                if (id != null) vm.navigate(Screen.Lesson(id)) else vm.navigate(Screen.Practice)
+            }
+            NextTarget.REVIEW -> vm.navigate(Screen.Review)
+            NextTarget.PRACTICE -> vm.navigate(Screen.Practice)
+            NextTarget.WORKSHOP -> vm.navigate(Screen.Workshop)
+            NextTarget.CHECKUP -> vm.navigate(Screen.Checkup)
+        }
+    }
+
+    var showIntro by rememberSaveable { mutableStateOf(!progress.homeIntroSeen) }
+    var showGarden by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -130,13 +157,138 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
         )
         Spacer(Modifier.height(Spacing.m))
 
+        // ---- 1. What is next -------------------------------------------------------------------
+        if (step != null) {
+            SoftCard {
+                Text(
+                    step.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.xs))
+                Text(step.title, style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(Spacing.xs))
+                Text(step.detail, style = MaterialTheme.typography.bodyMedium)
+                if (lesson != null && story.isNotBlank()) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        story,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (lesson != null && encounter != null) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        "Mit ${encounter.name} · ${encounter.role}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    step.reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (lesson != null) {
+                    Text(
+                        if (stepIndex in 1 until sessionSize) {
+                            "Weiter bei Schritt ${stepIndex + 1} von $sessionSize · ca. ${step.primary.minutes} Minuten"
+                        } else {
+                            "ca. ${step.primary.minutes} Minuten"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(Spacing.m))
+                BigButton(
+                    text = step.primary.label,
+                    onClick = { go(step.primary) },
+                    icon = if (step.kind == NextKind.DONE) null else situation?.let { appIcon(it.icon) }
+                )
+                val alternative = step.alternative
+                if (alternative != null) {
+                    Spacer(Modifier.height(Spacing.s))
+                    BigButton(
+                        text = alternative.label,
+                        onClick = { go(alternative) },
+                        secondary = true
+                    )
+                }
+            }
+            Spacer(Modifier.height(Spacing.m))
+        }
+
+        // ---- 2. How it continues ---------------------------------------------------------------
+        if (journey != null) {
+            SoftCard {
+                Text(
+                    "Dein Weg",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.xs))
+                Text(journey.chapterLine, style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.s))
+                LinearProgressIndicator(
+                    progress = { journey.chapterProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    drawStopIndicator = {}
+                )
+                Spacer(Modifier.height(Spacing.s))
+                Text(
+                    "${journey.chapterDone} von ${journey.chapterTotal} Lektionen in diesem Kapitel",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // Nur der nächste wirklich andere Ort wird genannt – zweimal „Beim Arzt“
+                // hintereinander erklärt nichts.
+                val nextDifferent = journey.ahead.firstOrNull { it.situationTitle != journey.now?.situationTitle }
+                val nextPlace = nextDifferent?.situationTitle
+                    ?: afterNext?.situation?.title
+                if (!nextPlace.isNullOrBlank()) {
+                    Text(
+                        "Danach: $nextPlace",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (journey.afterChapter.isNotBlank()) {
+                    Text(
+                        "Nächstes Kapitel: ${journey.afterChapter}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    "${journey.doneLessons} von ${journey.totalLessons} Lektionen geschafft",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.s))
+                BigButton(
+                    text = "Alle Bereiche",
+                    onClick = { vm.navigate(Screen.Paths) },
+                    secondary = true
+                )
+            }
+            Spacer(Modifier.height(Spacing.m))
+        }
+
+        // ---- 3. Today --------------------------------------------------------------------------
         SoftCard {
             RingSummary(
                 progress = if (goal > 0) minutesToday.toFloat() / goal.toFloat() else 0f,
                 top = "$minutesToday",
                 bottom = "von $goal",
                 title = when (day.mood) {
-                    DayMood.DONE -> "Für heute reicht es"
+                    DayMood.DONE -> "Tagesziel erreicht"
                     DayMood.REST -> "Heute ist Pausentag"
                     DayMood.OPEN -> "Dein Tagesziel"
                 },
@@ -152,12 +304,56 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
                     DayMood.OPEN -> "Kein Zeitdruck – jeder Satz zählt."
                 }
             )
-            if (day.mood == DayMood.DONE) {
-                Spacer(Modifier.height(Spacing.s))
-                BigButton(
-                    text = "Noch fünf Minuten",
-                    onClick = { vm.navigate(Screen.Practice) },
-                    secondary = true
+        }
+
+        Spacer(Modifier.height(Spacing.m))
+
+        SoftCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Tagesstreak",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "${streak.current} ${if (streak.current == 1) "Tag" else "Tage"}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.height(Spacing.s))
+            Text(Streak.line(streak), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(Spacing.s))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
+            ) {
+                ProfileCatalog.weekdayLabels.forEachIndexed { index, label ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            if (streak.week.getOrElse(index) { false }) "●" else "○",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (streak.week.getOrElse(index) { false }) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            if (streak.best > 1) {
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Bester Lauf: ${streak.best} Tage. Eine Pause nimmt nichts weg.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -169,278 +365,90 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
                 stage = gardenStage,
                 title = "Dein Sprachgarten",
                 stageLabel = Garden.label(gardenStage),
-                line = "${plural(progress.sessions.size, "Runde", "Runden")} · ${Phrasing.minutes(progress.totalMinutes)}"
+                line = "${Phrasing.minutes(progress.measuredMinutes.takeIf { it > 0 } ?: progress.totalMinutes)} insgesamt"
+            )
+            Spacer(Modifier.height(Spacing.s))
+            BigButton(
+                text = "Garten groß ansehen",
+                onClick = { showGarden = true },
+                secondary = true
             )
         }
 
-        if (checkupOpen) {
-            Spacer(Modifier.height(Spacing.m))
-            SoftCard(onClick = { vm.navigate(Screen.Checkup) }) {
-                LinkCard(
-                    title = "Standort bestimmen",
-                    description = "Du warst bei Teil ${progress.checkup.blockIndex + 1} von ${Checkup.blockCount()} – mach dort weiter, wo du aufgehört hast.",
-                    action = "Weiter"
-                )
-            }
-        }
-
-        Spacer(Modifier.height(Spacing.l))
-
-        if (next != null && situation != null) {
-            SoftCard {
-                Text("Nächste Begegnung", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    "${situation.title}: ${next.title}",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(Modifier.height(Spacing.xs))
-                Text(next.goal, style = MaterialTheme.typography.bodyMedium)
-                if (story.isNotBlank()) {
-                    Spacer(Modifier.height(Spacing.xs))
-                    Text(
-                        story,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (nextPath != null && nextPosition.isNotBlank()) {
-                    Spacer(Modifier.height(Spacing.xs))
-                    Text(
-                        "${nextPath.title} · $nextPosition",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                if (encounter != null) {
-                    Spacer(Modifier.height(Spacing.s))
-                    Text(
-                        "Mit ${encounter.name} · ${encounter.role}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                if (!suggestion.why.isBlank()) {
-                    Text(
-                        suggestion.why,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.height(Spacing.s))
-                Text(
-                    if (nextIsStarted) {
-                        "Weiter bei Schritt ${nextStep + 1} von ${next.steps.size} · ca. ${next.xpMinutes} Minuten"
-                    } else {
-                        "ca. ${next.xpMinutes} Minuten · ${next.steps.size} Schritte"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (afterNext != null) {
-                    Text(
-                        "Danach: ${afterNext.situation.title}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.height(Spacing.m))
-                BigButton(
-                    text = if (nextIsStarted) "Weitermachen" else "Weiterlernen",
-                    onClick = { vm.navigate(Screen.Lesson(next.id)) },
-                    icon = appIcon(situation.icon)
-                )
-            }
-        } else {
-            SoftCard {
-                Text("Alle Begegnungen geschafft", style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(Spacing.s))
-                Text(
-                    "Wiederhole deine Sätze, bis sie sicher sitzen.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(Modifier.height(Spacing.m))
-                BigButton("Wiederholen", { vm.navigate(Screen.Review) })
-            }
-        }
-
-        if (focus != null) {
+        if (reviewDue) {
             Spacer(Modifier.height(Spacing.m))
             SoftCard {
-                Text(
-                    "Heute passt zu dir",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(Spacing.xs))
-                Text(focus.title, style = MaterialTheme.typography.titleMedium)
+                Text("Passt das noch?", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    focus.detail,
+                    "Deine Angaben aus dem ersten Start sind ein paar Wochen alt. Sie bestimmen, welche Begegnungen zuerst kommen.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(Spacing.s))
                 BigButton(
-                    text = "Jetzt üben",
-                    onClick = {
-                        when (focus.target) {
-                            FocusTarget.PRACTICE -> vm.navigate(Screen.Practice)
-                            FocusTarget.REVIEW -> vm.navigate(Screen.Review)
-                            FocusTarget.WORKSHOP -> vm.navigate(Screen.Workshop)
-                            FocusTarget.LESSON -> {
-                                val target = vm.nextLesson()
-                                if (target != null) vm.navigate(Screen.Lesson(target.id)) else vm.navigate(Screen.Practice)
-                            }
-                        }
-                    },
+                    text = "Angaben ansehen",
+                    onClick = { vm.navigate(Screen.Preferences) },
                     secondary = true
                 )
-            }
-        }
-
-        if (resume != null) {
-            val (resumeLesson, step) = resume
-            Spacer(Modifier.height(Spacing.m))
-            SoftCard(onClick = { vm.navigate(Screen.Lesson(resumeLesson.id)) }) {
-                Text("Du warst hier", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    "${resumeLesson.title} · weiter bei Schritt ${step + 1} von ${resumeLesson.steps.size}",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    "Weitermachen, wo du aufgehört hast.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        if (due > 0) {
-            Spacer(Modifier.height(Spacing.m))
-            SoftCard(onClick = { vm.navigate(Screen.Review) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Wiederholen", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            if (due == 1) "1 Satz wartet auf dich" else "$due Sätze warten auf dich",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = LocalSprachColors.current.leafSoft,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                            Text("$due", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
+                TextButton(onClick = { vm.markProfileReviewed() }) {
+                    Text("Passt noch so", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
 
-        val week = progress.sessions.filter { it.day >= today - 6 }
-        if (week.isNotEmpty()) {
-            Spacer(Modifier.height(Spacing.m))
-            SoftCard {
-                Text("Diese Woche", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(Spacing.s))
-                StatRow(
-                    listOf(
-                        week.sumOf { it.minutes }.toString() to "Minuten",
-                        week.sumOf { it.speakingTasks }.toString() to "Sätze gesprochen",
-                        week.size.toString() to "Runden"
-                    )
-                )
-                Spacer(Modifier.height(Spacing.s))
-                BigButton(
-                    text = "Wochenrückblick",
-                    onClick = { vm.navigate(Screen.Recap) },
-                    secondary = true
-                )
-            }
-        }
-
-        Spacer(Modifier.height(Spacing.l))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-        ) {
-            HomeTile(
-                title = "Pfade",
-                subtitle = "${content.paths.size} Bereiche",
-                icon = "map",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                onClick = { vm.navigate(Screen.Paths) }
-            )
-            HomeTile(
-                title = "Üben",
-                subtitle = "Diktat & Sprechen",
-                icon = "chat",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                onClick = { vm.navigate(Screen.Practice) }
-            )
-        }
+        // ---- 4. The other rooms, deliberately quiet --------------------------------------------
         Spacer(Modifier.height(Spacing.m))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-        ) {
-            HomeTile(
-                title = "Sprachkarte",
-                subtitle = "Muster & Menschen",
-                icon = "link",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                onClick = { vm.navigate(Screen.Map) }
+        SoftCard {
+            Text(
+                "Auch möglich",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            HomeTile(
-                title = "Meine Sätze",
-                subtitle = "${progress.chunkMemory.size} gelernt",
+            RoomRow(
+                icon = "spark",
+                title = "Dein Fortschritt",
+                detail = buildString {
+                    append("${progress.chunkMemory.values.count { it.stage >= 4 }} Bausteine sicher")
+                    if (progress.mistakes.isNotEmpty()) {
+                        append(" · ${progress.mistakes.size} Sätze kommen zurück")
+                    } else {
+                        append(" · Garten, Woche und nächster Schritt")
+                    }
+                },
+                onClick = { vm.navigate(Screen.Recap) }
+            )
+            // Kein zweiter Weg in dieselbe Übung: „Üben“ ist der eigene Tab unten. Die
+            // Wiederholung erscheint hier nur, wenn die Empfehlung nicht schon dorthin führt.
+            if (step?.primary?.target != NextTarget.REVIEW) {
+                RoomRow(
+                    icon = "leaf",
+                    title = "Wiederholen",
+                    detail = when {
+                        due == 1 -> "1 Satz ist fällig"
+                        due > 1 -> "$due Sätze sind fällig"
+                        else -> "Nichts fällig"
+                    },
+                    onClick = { vm.navigate(Screen.Review) }
+                )
+            }
+            RoomRow(
                 icon = "star",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
+                title = "Meine Sätze",
+                detail = "${progress.chunkMemory.size} gelernt",
                 onClick = { vm.navigate(Screen.Collection) }
             )
-        }
-        Spacer(Modifier.height(Spacing.m))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-        ) {
-            HomeTile(
-                title = "Fehler-Werkstatt",
-                subtitle = if (progress.errorCounts.isEmpty()) "Noch keine Fehler" else "${progress.errorCounts.size} Themen",
+            RoomRow(
                 icon = "grammar",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
+                title = "Fehler-Werkstatt",
+                detail = if (progress.errorCounts.isEmpty()) "Noch keine Fehler" else "${progress.errorCounts.size} Themen",
                 onClick = { vm.navigate(Screen.Workshop) }
             )
-            HomeTile(
-                title = "Rückblick",
-                subtitle = "Deine Woche",
-                icon = "leaf",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                onClick = { vm.navigate(Screen.Recap) }
+            RoomRow(
+                icon = "link",
+                title = "Sprachkarte",
+                detail = "Muster & Menschen",
+                onClick = { vm.navigate(Screen.Map) }
             )
         }
 
@@ -482,32 +490,72 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
             modifier = Modifier.padding(bottom = Spacing.xl)
         )
     }
+
+    if (showGarden) {
+        GardenFullscreen(progress = progress, onDismiss = { showGarden = false })
+    }
+
+    if (showIntro) {
+        AlertDialog(
+            onDismissRequest = {
+                showIntro = false
+                vm.markHomeIntroSeen()
+            },
+            title = { Text("Das Wichtigste zuerst") },
+            text = {
+                Text(
+                    "Ganz oben steht, was jetzt dran ist – mit einem Knopf. „Dein Weg“ zeigt, wo du " +
+                        "gerade bist und was als Nächstes kommt. Was du außerdem machen kannst, steht " +
+                        "weiter unten. Verpassen kannst du nichts."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showIntro = false
+                    vm.markHomeIntroSeen()
+                }) { Text("Verstanden") }
+            }
+        )
+    }
 }
 
+/** A quiet line instead of a tile: the rooms are alternatives, not the main road. */
 @Composable
-private fun HomeTile(
-    title: String,
-    subtitle: String,
+private fun RoomRow(
     icon: String,
-    modifier: Modifier = Modifier,
+    title: String,
+    detail: String,
     onClick: () -> Unit
 ) {
-    SoftCard(modifier = modifier, onClick = onClick) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(44.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(appIcon(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(22.dp))
-            }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "$title. $detail" }
+            .padding(vertical = Spacing.s),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            appIcon(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.width(Spacing.m))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Spacer(Modifier.height(Spacing.s))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        Icon(
+            Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
         )
     }
 }

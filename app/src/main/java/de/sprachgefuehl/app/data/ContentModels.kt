@@ -132,7 +132,20 @@ data class Step(
     val errorCardId: String = "",
     val slots: List<String> = emptyList(),
     val chunkId: String = "",
-    val reveal: String = ""
+    val reveal: String = "",
+    /** Woher eine eingestreute Wiederholung kommt – für das themenübergreifende Feedback. */
+    val originLessonId: String = "",
+    val originTitle: String = "",
+    /** Warum diese Aufgabe gerade kommt – Onboarding, Schwäche oder Wiederholung. */
+    val why: String = "",
+    /** Bei eingestreuten Sätzen: was damals gesagt wurde und woher der Satz kommt. */
+    val originNote: String = "",
+    /** Beim Abruf bleibt das Modell verborgen, bis die Aufgabe gelöst ist. */
+    val modelHidden: Boolean = false,
+    /** Verstehen vor Sprechen: deutsche Bedeutung und drei Möglichkeiten. */
+    val understandingDe: String = "",
+    val understandingOptions: List<String> = emptyList(),
+    val understandingAnswer: Int = -1
 )
 
 @Serializable

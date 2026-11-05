@@ -18,6 +18,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,12 +30,16 @@ import androidx.compose.ui.unit.dp
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
+import de.sprachgefuehl.app.domain.Garden
+import de.sprachgefuehl.app.domain.LearningOverview
 import de.sprachgefuehl.app.domain.Milestones
+import de.sprachgefuehl.app.domain.NextAction
+import de.sprachgefuehl.app.domain.NextTarget
 import de.sprachgefuehl.app.domain.Phrasing
-import de.sprachgefuehl.app.domain.SkillHistory
 import de.sprachgefuehl.app.domain.Srs
 import de.sprachgefuehl.app.ui.components.BigButton
-import de.sprachgefuehl.app.ui.components.GardenSummary
+import de.sprachgefuehl.app.ui.components.GardenFullscreen
+import de.sprachgefuehl.app.ui.components.GardenPlant
 import de.sprachgefuehl.app.ui.components.ScreenHeader
 import de.sprachgefuehl.app.ui.components.SoftCard
 import de.sprachgefuehl.app.ui.components.StatRow
@@ -48,15 +56,38 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
     val today = now / Srs.DAY_MS
     val days = (0..6).map { offset -> today - 6 + offset }
     val week = progress.sessions.filter { it.day in days }
-    val minutes = week.sumOf { it.minutes }
-    val speaking = week.sumOf { it.speakingTasks }
-    val newChunks = week.sumOf { it.newChunks }
-    val maxMinutes = week.maxOfOrNull { it.minutes }?.coerceAtLeast(1) ?: 1
+    val overview = LearningOverview.of(content, progress, now)
+    val minutes = overview.week.minutes
+    val speaking = overview.week.speakingTasks
+    val newChunks = overview.week.newChunks
+    val maxMinutes = days.maxOfOrNull { progress.measuredMinutesOn(it) }?.coerceAtLeast(1) ?: 1
     val canDoItems = content.canDo.filter { it.id in progress.canDo }.takeLast(4)
     val milestones = Milestones.earned(progress)
-    val goal = progress.profile.dailyMinutes.takeIf { it > 0 } ?: 10
-    val previousMinutes = progress.sessions.filter { it.day in days.map { day -> day - 7 } }.sumOf { it.minutes }
-    val movements = SkillHistory.movements(progress, now)
+    val goal = overview.week.goal
+    val previousMinutes = overview.week.previousMinutes
+    val gardenStage = Garden.stage(progress)
+    val gardenHeight = when (gardenStage) {
+        0 -> 170.dp
+        1 -> 210.dp
+        2 -> 235.dp
+        3 -> 260.dp
+        4 -> 285.dp
+        else -> 300.dp
+    }
+    var showGarden by rememberSaveable { mutableStateOf(false) }
+
+    fun go(action: NextAction) {
+        when (action.target) {
+            NextTarget.LESSON -> {
+                val id = action.lessonId
+                if (id != null) vm.navigate(Screen.Lesson(id)) else vm.navigate(Screen.Home)
+            }
+            NextTarget.REVIEW -> vm.navigate(Screen.Review)
+            NextTarget.PRACTICE -> vm.navigate(Screen.Practice)
+            NextTarget.WORKSHOP -> vm.navigate(Screen.Workshop)
+            NextTarget.CHECKUP -> vm.navigate(Screen.Checkup)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -64,24 +95,103 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
             .verticalScroll(rememberScrollState())
     ) {
         ScreenHeader(
-            title = "Deine Woche",
-            subtitle = "Was in den letzten sieben Tagen passiert ist",
+            title = "Dein Sprachgarten",
+            subtitle = "Dein Garten, deine Woche und was als Nächstes kommt",
             onBack = if (LocalTabRoot.current) null else ({ vm.back() })
         )
         Column(modifier = Modifier.padding(horizontal = Spacing.l)) {
-            val gardenStage = de.sprachgefuehl.app.domain.Garden.stage(progress)
             SoftCard {
-                GardenSummary(
+                GardenPlant(
                     stage = gardenStage,
-                    title = "Dein Sprachgarten",
-                    stageLabel = de.sprachgefuehl.app.domain.Garden.label(gardenStage),
-                    line = "${plural(progress.sessions.size, "Runde", "Runden")} · ${Phrasing.minutes(progress.totalMinutes)} · ${Phrasing.activeDays(progress.activeDays)}",
-                    nextLine = de.sprachgefuehl.app.domain.Garden.nextStep(progress)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(gardenHeight)
+                )
+                Spacer(Modifier.height(Spacing.m))
+                Text(
+                    Garden.label(gardenStage),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "${plural(progress.sessions.size, "Runde", "Runden")} · " +
+                        "${Phrasing.minutes(progress.measuredMinutes.takeIf { it > 0 } ?: progress.totalMinutes)} · " +
+                        Phrasing.activeDays(progress.activeDays),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Garden.nextStep(progress)?.let { nextLine ->
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        nextLine,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.height(Spacing.m))
+                BigButton(
+                    text = "Garten groß ansehen",
+                    onClick = { showGarden = true },
+                    secondary = true
                 )
             }
             Spacer(Modifier.height(Spacing.m))
 
-            if (week.isEmpty()) {
+            val next = overview.next
+            if (next != null) {
+                SoftCard {
+                    Text(
+                        "Als Nächstes",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(next.title, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(next.detail, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        next.reason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(Spacing.m))
+                    BigButton(next.primary.label, { go(next.primary) })
+                }
+                Spacer(Modifier.height(Spacing.m))
+            }
+
+            if (overview.mistakes.isNotEmpty()) {
+                SoftCard {
+                    Text("Diese Sätze kommen zurück", style = MaterialTheme.typography.titleMedium)
+                    overview.mistakes.forEach { mistake ->
+                        Spacer(Modifier.height(Spacing.s))
+                        Text("„${mistake.target}“", style = MaterialTheme.typography.bodyMedium)
+                        val detail = listOfNotNull(
+                            mistake.origin.takeIf { it.isNotBlank() }?.let { "Aus „$it“" },
+                            mistake.heard.takeIf { it.isNotBlank() }?.let { "damals: „${it.take(40)}“" },
+                            mistake.skill?.tab
+                        ).joinToString(" · ")
+                        if (detail.isNotBlank()) {
+                            Text(
+                                detail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(Spacing.s))
+                    Text(
+                        "Eine richtige Antwort löst den Eintrag auf.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(Spacing.m))
+            }
+
+            if (week.isEmpty() && overview.week.minutes == 0) {
                 SoftCard {
                     Text("Diese Woche ist noch ruhig", style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(Spacing.s))
@@ -117,30 +227,15 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        plural(overview.week.activeDays, "aktiver Tag", "aktive Tage") +
+                            " in dieser Woche.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (previousMinutes > 0) {
                         Text(
                             "Die Woche davor: $previousMinutes Minuten.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                if (movements.isNotEmpty()) {
-                    Spacer(Modifier.height(Spacing.m))
-                    SoftCard {
-                        Text("Was sich bewegt hat", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(Spacing.s))
-                        movements.take(3).forEach { movement ->
-                            Text(
-                                "· ${movement.sentence()}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            )
-                        }
-                        Spacer(Modifier.height(Spacing.xs))
-                        Text(
-                            "In Worten, nicht in Prozenten. Ein Schritt zurück heißt nur: gerade wackelt es.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -156,7 +251,7 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
                         horizontalArrangement = Arrangement.spacedBy(Spacing.s)
                     ) {
                         days.forEach { day ->
-                            val dayMinutes = progress.minutesOn(day)
+                            val dayMinutes = progress.measuredMinutesOn(day)
                             val isToday = day == today
                             Column(
                                 modifier = Modifier.weight(1f),
@@ -307,6 +402,10 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
             )
             Spacer(Modifier.height(Spacing.xl))
         }
+    }
+
+    if (showGarden) {
+        GardenFullscreen(progress = progress, onDismiss = { showGarden = false })
     }
 }
 

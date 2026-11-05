@@ -10,9 +10,9 @@ import de.sprachgefuehl.app.Screen
 enum class AppTab(val label: String, val icon: String, val root: Screen) {
     START("Start", "home", Screen.Home),
     PRACTICE("Üben", "mic", Screen.Practice),
-    // "Woche" instead of "Rückblick": the tab label has to fit next to the icon even when the
+    // "Stand" instead of "Rückblick": the tab label has to fit next to the icon even when the
     // learner chooses the largest font size.
-    RECAP("Woche", "leaf", Screen.Recap),
+    RECAP("Stand", "leaf", Screen.Recap),
     PROFILE("Profil", "person", Screen.Profile)
 }
 

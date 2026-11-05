@@ -16,7 +16,7 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 
 Dazu:
 
-- **Vier Bereiche unten**: Start, Üben, Woche, Profil. In einer Lektion verschwindet die Leiste, damit der Weg nach vorn der einzige bleibt.
+- **Vier Bereiche unten**: Start, Üben, Stand, Profil. In einer Lektion verschwindet die Leiste, damit der Weg nach vorn der einzige bleibt.
 - **Profil beim ersten Start**: Name (freiwillig), Lerngrund, Interessen, Tagesziel und Lerntage entstehen im Onboarding – in zwei Schritten, jeder überspringbar. Später liegen alle Angaben zusammen unter **„Deine Angaben“** (oberste Karte im Profil), getrennt von der Statistik und den Einstellungen.
 - **Wo war ich?**: Die Startseite zeigt „weiter bei Schritt 4 von 13“, wenn eine Lektion angefangen wurde.
 - **Alltags-Situationen** in acht Pfaden: Gesundheit, Leute, Einkaufen, Unterwegs, Alltag, Behörden & Termine, Feste & Einladen, „Wenn’s hakt“ – 33 Situationen mit 110 Lektionen.
@@ -24,14 +24,18 @@ Dazu:
 - **Üben mit Ansage**: Oben steht, was gerade ansteht („12 Sätze sind bald fällig“, „3 Sätze wackeln noch“) und welche der vier Übungsarten dazu passt; jede Karte nennt die Bereiche, die sie trainiert. Geübt wird zuerst, was fällig ist, dann Geschaffenes – nie ein Thema, das noch nicht dran war.
 - **Wiederholen auf zwei Wegen**: sprechen oder tippen, wenn es gerade laut ist. Am Ende „Noch eine Runde“, und eine angefangene Runde zählt auch beim Verlassen.
 - **Standortbestimmung mit Pause**: jederzeit unterbrechbar; die Startseite bietet danach „weiter bei Teil 3 von 5“, das Sprachprofil ein „Standort neu bestimmen“.
-- **Woche in Worten**: Vorwoche, Tagesziel, die nächste Gartenstufe („noch zwei Runden bis Knospen“) und was sich in den fünf Bereichen bewegt hat – in Stufen, nicht in Prozenten.
+- **Stand in Worten**: Der Tab „Stand“ stellt den Sprachgarten in den Mittelpunkt – groß, mit Gartenstufe und dem nächsten Wachstumsschritt –, darunter die letzte Woche, offene Fehler, Vorwoche und Tagesziel. Pool und die fünf Bereiche stehen nur noch zugeklappt unter „Dein Lernweg“ in den Einstellungen. Die Minuten stammen aus der gemessenen Lernzeit.
 - **Meine Sätze**: Suche, „Alle anhören“, Aufnahmen mit Datum und einzeln löschbar.
 
 - **Sprachprofil statt einer Stufe**: fünf Bereiche (Hören, Grammatik, Bausteine, Sprechen, Verknüpfen) mit vier Stufen, fortgeschrieben aus jeder echten Aufgabe.
 - **Werkstatt**: 12 Grammatik-Säulen, 5 Stufen Verbindungswörter, Strategien (nachfragen, umschreiben, Zeit gewinnen), Klangpaare, schnelles Sprechen, kurze Nachrichten.
 - **Sprachkarte**: Muster mit ihren Bausteinen und Verwandtschaften; wächst mit dem Lernstand.
 - **Fehler-Werkstatt**: persönliches Fehlerprofil und Wiederholungsqueue.
-- **Sprachgarten**: wächst mit jeder Runde, verwelkt nie, keine Serien, keine Rangliste.
+- **Sprachgarten**: wächst mit jeder Runde, verwelkt nie, keine Rangliste – er steht im Tab „Stand“ als große Fläche und lässt sich in voller Größe ansehen.
+- **Tagesstreak statt Serie unter Druck**: Die Startseite zeigt, wie viele Tage in Folge etwas passiert ist, mit Wochenpunkten und bestem Lauf. Ein Pausentag nimmt nichts weg, die Streak mahnt nicht.
+- **Gemessene Lernzeit**: Während einer Lektion läuft ein Timer; Tagesziel, Profil und Stand nutzen die wirklich gemessenen Minuten statt einer Schätzung.
+- **Wörter antippen**: In Modellsätzen sind bekannte Wörter gepunktet unterstrichen; ein Tipp zeigt die deutsche Bedeutung und spricht das Wort vor.
+- **Jede Runde anders – und passend**: Neun Aufgabenformate (Nachsprechen, Übersetzen, Abrufen, Wortstellung, Bedeutungswahl, Hörverstehen, Diktat, Lückensatz, Verbinden) entstehen aus allen Bausteinen. Onboarding-Antworten gewichten die Bereiche, Fehler kommen in der nächsten Lektion mit dem Gehörten zurück, wackelige Sätze bekommen Stützen, sichere mehr Abruf. Im Unterricht steht unter dem Titel „Übt: …“, die Begründung heißt „Warum diese Aufgabe?“; am Ende siehst du, wie viele Bausteine deine Sammlung hat und wie viele Sätze zurückkommen.
 - **Standortbestimmung beim Start**: fünf Blöcke, je ein Bereich, mit adaptiver Treppe (zwei richtige Aufgaben heben die Stufe, eine falsche senkt sie) – rund 12–15 Minuten, pausierbar, ohne Noten. Wer nicht prüfen mag, startet vorsichtig nach Selbsteinschätzung.
 - **Tagesplan mit Fokus**: Die Startseite nennt den schwächsten Bereich und schlägt genau eine passende Runde vor (Sprechen, Wiederholen, Grammatik oder Verbinden).
 - **Kann-Liste** statt Punkte: „Ich kann sagen, was mir weh tut.“
@@ -40,7 +44,7 @@ Dazu:
 - **Sichtbarer Fortschritt**: Jeder Pfad zeigt „2 von 5 Lektionen“, jede Situation ihren Zustand (Neu, Angefangen, Geschafft) und die nächste Lektion; die empfohlene Situation trägt „Als Nächstes“.
 - **Ruhiges Tagesende**: Ist das Ziel erreicht, sagt die App „Für heute reicht es“. An einem Pausentag wird nichts erwartet.
 - **Alle Zeilen anhören**: Dialoge laufen auf Wunsch am Stück – Hände frei.
-- **Einstellungen in drei Teilen**: Darstellung, Stimme, Daten. Die Stimmwahl („Langsam / Normal / Zügig“) gilt für alle Modellsätze; in Üben, Lektion und Prüfung gibt es zusätzlich einen „Langsam“-Knopf. Alles Persönliche steht gebündelt unter „Deine Angaben“ im Profil.
+- **Einstellungen in drei Teilen**: Darstellung, Stimme, Daten – dazu der zugeklappte Bereich „Dein Lernweg“. Die Stimmwahl („Langsam / Normal / Zügig“) gilt für alle Modellsätze; in Üben, Lektion und Prüfung gibt es zusätzlich einen „Langsam“-Knopf. Alles Persönliche steht gebündelt unter „Deine Angaben“ im Profil.
 - **Kein Konto, kein Server**: Alles liegt auf dem Gerät. Für ein neues Handy erstellt man eine Sicherungsdatei (Fortschritt, Sätze und Aufnahmen) und lädt sie dort wieder ([docs/backup.md](docs/backup.md)).
 - **Vorher/Nachher**: eigene Aufnahmen bleiben lokal.
 
@@ -72,7 +76,7 @@ app/src/main/java/de/sprachgefuehl/app/
   ui/navigation/               Die vier Tabs
   ui/                          Compose-Screens, Komponenten, Theme
 app/src/main/assets/content/content.json    generierte Inhalte
-app/src/test/                 138 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up und Sicherungsformat
+app/src/test/                 197 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht und Streak
 tools/                        Inhaltskatalog und Generator
 docs/                         Design, Prüfbogen, Test-Checkliste, Store-Vorbereitung
 ```

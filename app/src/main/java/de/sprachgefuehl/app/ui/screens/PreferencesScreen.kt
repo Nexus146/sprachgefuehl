@@ -66,8 +66,8 @@ fun PreferencesScreen(vm: AppViewModel, state: AppUiState) {
         )
         Column(modifier = Modifier.padding(horizontal = Spacing.l)) {
             Text(
-                "Das sind die Fragen vom ersten Start. Sie bestimmen nur, was dir zuerst " +
-                    "vorgeschlagen wird – gesperrt ist nichts. Du kannst alles jederzeit ändern.",
+                "Das sind die Fragen vom ersten Start. Unter jeder Frage steht, was deine Antwort " +
+                    "gerade bewirkt – gesperrt ist nichts. Du kannst alles jederzeit ändern.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -103,7 +103,7 @@ fun PreferencesScreen(vm: AppViewModel, state: AppUiState) {
             Text("Warum lernst du Englisch?", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.xs))
             Text(
-                "Das bestimmt, welche Begegnungen zuerst vorgeschlagen werden – der Weg bleibt offen.",
+                "Mehrere möglich. Das bestimmt, welche Begegnungen zuerst vorgeschlagen werden – der Weg bleibt offen.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -115,25 +115,42 @@ fun PreferencesScreen(vm: AppViewModel, state: AppUiState) {
                 ProfileCatalog.reasons.forEach { choice ->
                     Tag(
                         text = choice.label,
-                        active = profile.reasonId == choice.id,
+                        active = choice.id in profile.reasons(),
                         onClick = {
                             vm.updateProfile {
-                                it.copy(reasonId = if (it.reasonId == choice.id) "" else choice.id)
+                                val next = if (choice.id in it.reasons()) it.reasons() - choice.id
+                                else it.reasons() + choice.id
+                                it.copy(reasonIds = next, reasonId = next.firstOrNull().orEmpty())
                             }
                         }
                     )
                 }
+            }
+            Spacer(Modifier.height(Spacing.s))
+            Text(
+                if (profile.reasons().isEmpty()) {
+                    "Ohne Angabe geht der Weg der Reihe nach."
+                } else {
+                    "Das ändert: " + ProfileCatalog.reasonEffects(profile.reasons()).joinToString(" ")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            val reasonFocus = ProfileCatalog.focusLabels(profile.reasons())
+            if (reasonFocus.isNotEmpty()) {
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Übt besonders: " + reasonFocus.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(Modifier.height(Spacing.l))
             Text("Was interessiert dich?", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.xs))
             Text(
-                if (profile.interests.isEmpty()) {
-                    "Ohne Auswahl kommst du der Reihe nach durch alle Situationen."
-                } else {
-                    "Diese Themen bekommen in den Geschichten den Vorrang."
-                },
+                "Mehrere möglich. Die Auswahl verschiebt, welche Begegnungen und Geschichten zuerst kommen.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -154,6 +171,25 @@ fun PreferencesScreen(vm: AppViewModel, state: AppUiState) {
                         }
                     )
                 }
+            }
+            Spacer(Modifier.height(Spacing.s))
+            Text(
+                if (profile.interests.isEmpty()) {
+                    "Ohne Auswahl kommen alle Geschichten gleich oft."
+                } else {
+                    "Das ändert: " + ProfileCatalog.interestEffects(profile.interests).joinToString(" ")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            val interestFocus = ProfileCatalog.focusLabels(profile.reasons() + profile.interests)
+            if (interestFocus.isNotEmpty()) {
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Übt besonders: " + interestFocus.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(Modifier.height(Spacing.l))

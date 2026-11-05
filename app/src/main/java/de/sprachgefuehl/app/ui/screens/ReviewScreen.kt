@@ -263,7 +263,7 @@ fun ReviewScreen(vm: AppViewModel, state: AppUiState) {
                         text = "Antwort prüfen",
                         enabled = typed.isNotBlank() && grade == 0,
                         onClick = {
-                            val result = Scorer.score(chunk.en, typed, usedHint = revealed)
+                            val result = Scorer.score(chunk.en, typed, usedHint = revealed, strict = true)
                             finishAnswer(result.grade, "", revealed, spoken = false, missingWords = result.missing)
                         },
                         secondary = true

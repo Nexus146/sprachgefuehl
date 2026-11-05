@@ -18,6 +18,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,6 +37,8 @@ import de.sprachgefuehl.app.domain.Srs
 import de.sprachgefuehl.app.domain.state
 import de.sprachgefuehl.app.ui.components.BigButton
 import de.sprachgefuehl.app.ui.components.DividerLine
+import de.sprachgefuehl.app.ui.components.GardenFullscreen
+import de.sprachgefuehl.app.ui.components.GardenSummary
 import de.sprachgefuehl.app.ui.components.ProfileAvatar
 import de.sprachgefuehl.app.ui.components.ScreenHeader
 import de.sprachgefuehl.app.ui.components.SoftCard
@@ -51,6 +57,7 @@ fun ProfileScreen(vm: AppViewModel, state: AppUiState) {
     val dueReviews = progress.chunkMemory.count { Srs.isDue(it.value, System.currentTimeMillis()) }
     val weakest = Skills.weakest(progress.skills)
     val weakestStage = weakest?.let { SkillCatalog.stage(progress.skills.state(it).rating) }
+    var showGarden by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -121,6 +128,15 @@ fun ProfileScreen(vm: AppViewModel, state: AppUiState) {
             }
 
             Spacer(Modifier.height(Spacing.m))
+            SoftCard(onClick = { vm.navigate(Screen.Recap) }) {
+                LinkCard(
+                    title = "Dein Fortschritt",
+                    description = "Garten, Woche und was als Nächstes kommt",
+                    action = "Ansehen"
+                )
+            }
+
+            Spacer(Modifier.height(Spacing.m))
             SoftCard(onClick = { vm.navigate(Screen.Settings) }) {
                 LinkCard(
                     title = "Neues Handy?",
@@ -136,9 +152,28 @@ fun ProfileScreen(vm: AppViewModel, state: AppUiState) {
                 StatLine("Geschaffene Lektionen", "${progress.completedLessons.size} von ${state.content?.lessons?.size ?: 0}")
                 StatLine("Sätze in deiner Sammlung", "${progress.chunkMemory.size}")
                 StatLine("Sprechaufgaben", "${progress.totalSpeakingTasks}")
-                StatLine("Geübte Minuten", "${progress.totalMinutes}")
+                StatLine(
+                    "Gemessene Lernzeit",
+                    "${progress.measuredMinutes.takeIf { it > 0 } ?: progress.totalMinutes} Minuten"
+                )
                 StatLine("Garten", Garden.label(Garden.stage(progress)))
                 StatLine("Fällige Wiederholungen", "$dueReviews")
+            }
+
+            Spacer(Modifier.height(Spacing.l))
+            SoftCard {
+                GardenSummary(
+                    stage = Garden.stage(progress),
+                    title = "Dein Sprachgarten",
+                    stageLabel = Garden.label(Garden.stage(progress)),
+                    line = "${progress.sessions.size} Runden · ${Garden.nextStep(progress) ?: "voll gewachsen"}"
+                )
+                Spacer(Modifier.height(Spacing.s))
+                BigButton(
+                    text = "Garten groß ansehen",
+                    onClick = { showGarden = true },
+                    secondary = true
+                )
             }
 
             Spacer(Modifier.height(Spacing.l))
@@ -206,6 +241,10 @@ fun ProfileScreen(vm: AppViewModel, state: AppUiState) {
             )
             Spacer(Modifier.height(Spacing.xl))
         }
+    }
+
+    if (showGarden) {
+        GardenFullscreen(progress = progress, onDismiss = { showGarden = false })
     }
 }
 

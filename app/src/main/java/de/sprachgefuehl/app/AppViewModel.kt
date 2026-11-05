@@ -139,6 +139,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateProfile(transform: (Profile) -> Profile) = learning?.updateProfile(transform)
 
+    fun markHomeIntroSeen() = learning?.markHomeIntroSeen()
+
+    fun markProfileReviewed() = learning?.markProfileReviewed()
+
     fun updatePlacementLevel(level: Int) = learning?.updatePlacementLevel(level)
 
     fun celebrateMilestones(): List<Milestone> = learning?.celebrateMilestones().orEmpty()
@@ -175,6 +179,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun recordError(cardId: String) = learning?.recordError(cardId)
 
+    /** Ein Fehler mit Satz und Gehörtem – die nächste Lektion nimmt ihn wieder auf. */
+    fun recordMistake(
+        chunkId: String,
+        lessonId: String,
+        lessonTitle: String,
+        target: String,
+        heard: String,
+        skill: Skill?,
+        cardId: String
+    ) = learning?.recordMistake(
+        chunkId = chunkId,
+        lessonId = lessonId,
+        lessonTitle = lessonTitle,
+        target = target,
+        heard = heard,
+        skill = skill?.id.orEmpty(),
+        cardId = cardId
+    )
+
+    /** Eine richtige Antwort schließt den Eintrag. */
+    fun resolveMistake(chunkId: String) = learning?.resolveMistake(chunkId)
+
     /** One checked task from a lesson or a practice round. */
     fun recordCheck(skill: Skill, correct: Boolean, level: Int = 1) =
         learning?.observeAnswer(skill, correct, level)
@@ -210,11 +236,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun variantFor(situationId: String): SituationVariant? = learning?.variantFor(situationId)
 
-    fun completeLesson(lessonId: String, speakingTasks: Int): Boolean {
+    fun completeLesson(lessonId: String, speakingTasks: Int, seconds: Int = 0): Boolean {
         val repository = learning ?: return false
         val lesson = repository.content.lessons.firstOrNull { it.id == lessonId } ?: return false
-        return repository.completeLesson(lesson, speakingTasks)
+        return repository.completeLesson(lesson, speakingTasks, seconds)
     }
+
+    /** Gemessene Lernzeit in Sekunden – nicht geschätzt. */
+    fun recordLearningTime(seconds: Int) = learning?.recordLearningTime(seconds)
 
     fun recordReviewSession(minutes: Int, speakingTasks: Int) =
         learning?.recordReviewSession(minutes, speakingTasks)

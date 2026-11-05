@@ -6,25 +6,108 @@ import de.sprachgefuehl.app.data.Persona
 import de.sprachgefuehl.app.data.Profile
 import de.sprachgefuehl.app.data.Progress
 
-data class ProfileChoice(val id: String, val label: String, val paths: Set<String> = emptySet())
+/**
+ * One answer with its consequence. [paths] moves situations forward, [storyTags] decides which
+ * story a situation tells, [effect] says in plain words what the choice does – a question without
+ * a visible consequence does not belong in the app.
+ */
+data class ProfileChoice(
+    val id: String,
+    val label: String,
+    val paths: Set<String> = emptySet(),
+    val storyTags: Set<String> = emptySet(),
+    val effect: String = "",
+    /** Was diese Antwort beim Üben besonders häufig macht. */
+    val focusSkills: Set<Skill> = emptySet()
+)
 
 /** The labels live in one place so profile screen, home and tests agree. */
 object ProfileCatalog {
     val reasons = listOf(
-        ProfileChoice("familie", "Familie & Enkel", setOf("leute")),
-        ProfileChoice("reisen", "Reisen", setOf("unterwegs")),
-        ProfileChoice("alltag", "Alltag & Nachbarn", setOf("alltag", "einkaufen")),
-        ProfileChoice("gesundheit", "Gesundheit", setOf("gesundheit")),
-        ProfileChoice("kopf", "Kopf fit halten")
+        ProfileChoice(
+            id = "familie",
+            label = "Familie & Enkel",
+            paths = setOf("leute", "feste"),
+            effect = "Begegnungen mit Familie, Nachbarn und Festen kommen zuerst.",
+            focusSkills = setOf(Skill.SPRECHEN, Skill.BAUSTEINE)
+        ),
+        ProfileChoice(
+            id = "reisen",
+            label = "Reisen",
+            paths = setOf("unterwegs"),
+            storyTags = setOf("reisen"),
+            effect = "Begegnungen unterwegs – Bus, Bahn, Weg fragen – kommen zuerst.",
+            focusSkills = setOf(Skill.HOEREN, Skill.SPRECHEN)
+        ),
+        ProfileChoice(
+            id = "alltag",
+            label = "Alltag & Nachbarn",
+            paths = setOf("alltag", "einkaufen"),
+            effect = "Alltag, Nachbarschaft und Einkaufen kommen zuerst.",
+            focusSkills = setOf(Skill.SPRECHEN, Skill.BAUSTEINE)
+        ),
+        ProfileChoice(
+            id = "gesundheit",
+            label = "Gesundheit",
+            paths = setOf("gesundheit"),
+            storyTags = setOf("gesundheit"),
+            effect = "Arzt, Apotheke und Gesundheit kommen zuerst.",
+            focusSkills = setOf(Skill.HOEREN, Skill.BAUSTEINE)
+        ),
+        ProfileChoice(
+            id = "kopf",
+            label = "Kopf fit halten",
+            paths = setOf("werkstatt", "leute"),
+            effect = "Muster und Grammatik-Werkstatt kommen zuerst – Gespräche bleiben dabei.",
+            focusSkills = setOf(Skill.GRAMMATIK, Skill.VERKNUEPFEN)
+        )
     )
 
+    /**
+     * Only interests with a real effect: every one of them moves situations forward and changes
+     * the story. "Nachrichten" was dropped for that reason – it changed nothing.
+     */
     val interests = listOf(
-        ProfileChoice("kochen", "Kochen & Essen", setOf("einkaufen")),
-        ProfileChoice("reisen", "Reisen", setOf("unterwegs")),
-        ProfileChoice("garten", "Garten", setOf("alltag")),
-        ProfileChoice("musik", "Musik", setOf("leute")),
-        ProfileChoice("nachrichten", "Nachrichten"),
-        ProfileChoice("sport", "Sport", setOf("gesundheit"))
+        ProfileChoice(
+            id = "kochen",
+            label = "Kochen & Essen",
+            paths = setOf("einkaufen"),
+            storyTags = setOf("kochen"),
+            effect = "Geschichten spielen öfter im Café, beim Essen und beim Einkaufen.",
+            focusSkills = setOf(Skill.BAUSTEINE, Skill.GRAMMATIK)
+        ),
+        ProfileChoice(
+            id = "reisen",
+            label = "Reisen",
+            paths = setOf("unterwegs"),
+            storyTags = setOf("reisen"),
+            effect = "Geschichten spielen öfter unterwegs – Bus, Bahnhof, Hotel.",
+            focusSkills = setOf(Skill.HOEREN, Skill.SPRECHEN)
+        ),
+        ProfileChoice(
+            id = "garten",
+            label = "Garten",
+            paths = setOf("alltag"),
+            storyTags = setOf("garten"),
+            effect = "Geschichten spielen öfter im Haus, im Hof und im Garten.",
+            focusSkills = setOf(Skill.BAUSTEINE, Skill.GRAMMATIK)
+        ),
+        ProfileChoice(
+            id = "musik",
+            label = "Musik",
+            paths = setOf("leute", "feste"),
+            storyTags = setOf("musik"),
+            effect = "Geschichten spielen öfter bei Festen und im Gespräch.",
+            focusSkills = setOf(Skill.SPRECHEN, Skill.BAUSTEINE)
+        ),
+        ProfileChoice(
+            id = "sport",
+            label = "Bewegung & Gesundheit",
+            paths = setOf("gesundheit"),
+            storyTags = setOf("gesundheit"),
+            effect = "Geschichten spielen öfter bei Gesundheit, Apotheke und Bewegung.",
+            focusSkills = setOf(Skill.HOEREN, Skill.BAUSTEINE)
+        )
     )
 
     val goals = listOf(5, 10, 15, 20)
@@ -32,7 +115,38 @@ object ProfileCatalog {
 
     fun reason(id: String): ProfileChoice? = reasons.firstOrNull { it.id == id }
     fun reasonLabel(id: String): String = reason(id)?.label ?: ""
+    fun reasonLabels(ids: Set<String>): List<String> = reasons.filter { it.id in ids }.map { it.label }
+
+    /** Was alle gewählten Gründe zusammen ändern – ein Satz pro Grund. */
+    fun reasonEffects(ids: Set<String>): List<String> = reasons.filter { it.id in ids }.map { it.effect }
     fun interestLabels(ids: Set<String>): List<String> = interests.filter { it.id in ids }.map { it.label }
+
+    /**
+     * Die gewählten Antworten übersetzt in das, was sie beim Üben häufiger machen. Gründe und
+     * Interessen teilen sich dieselben IDs (z. B. „reisen“), deshalb eine Menge.
+     */
+    fun focusSkills(ids: Set<String>): Set<Skill> =
+        (reasons + interests).filter { it.id in ids }.flatMap { it.focusSkills }.toSet()
+
+    /** In der Reihenfolge der fünf Bereiche – für „Übt besonders: Hören · Sprechen“. */
+    fun focusLabels(ids: Set<String>): List<String> {
+        val focus = focusSkills(ids)
+        return Skill.entries.filter { it in focus }.map { it.tab }
+    }
+
+    /** What the chosen reason actually changes, in one sentence. */
+    fun reasonEffect(id: String): String = reason(id)?.effect.orEmpty()
+
+    /** What the chosen interests actually change – one sentence each. */
+    fun interestEffects(ids: Set<String>): List<String> = interests.filter { it.id in ids }.map { it.effect }
+
+    /**
+     * The interests translated into the tags the stories carry. "Bewegung & Gesundheit" should
+     * open the health stories, even though the story itself is tagged "gesundheit".
+     */
+    fun storyTags(ids: Set<String>): Set<String> =
+        (interests.filter { it.id in ids }.flatMap { it.storyTags } +
+            reasons.filter { it.id in ids }.flatMap { it.storyTags }).toSet()
 
     fun weekdaysLabel(days: Set<Int>): String = when {
         days.isEmpty() -> "keine festen Tage"
@@ -44,7 +158,7 @@ object ProfileCatalog {
 
     /** One line for the profile overview; the questions themselves have their own page. */
     fun summary(profile: Profile): String = listOf(
-        reasonLabel(profile.reasonId),
+        reasonLabels(profile.reasons()).joinToString(", "),
         "${profile.dailyMinutes} Minuten am Tag",
         weekdaysLabel(profile.weekdays)
     ).filter { it.isNotBlank() }.joinToString(" · ")
@@ -58,9 +172,13 @@ data class LessonSuggestion(val lesson: Lesson, val why: String, val encounter: 
  */
 object Personalization {
 
+    /** The story tags a profile asks for – reason and interests, both translated. */
+    fun storyTagsFor(profile: Profile): Set<String> =
+        ProfileCatalog.storyTags(profile.interests + profile.reasons())
+
     fun preferredPaths(profile: Profile): Set<String> {
         val paths = mutableSetOf<String>()
-        ProfileCatalog.reason(profile.reasonId)?.let { paths += it.paths }
+        profile.reasons().forEach { id -> ProfileCatalog.reason(id)?.let { paths += it.paths } }
         ProfileCatalog.interests.filter { it.id in profile.interests }.forEach { paths += it.paths }
         return paths
     }
@@ -68,11 +186,16 @@ object Personalization {
     fun suggestion(content: ContentBundle, progress: Progress): LessonSuggestion? {
         val remaining = SessionBuilder.orderedLessons(content).filter { it.id !in progress.completedLessons }
         if (remaining.isEmpty()) return null
+        // Eine angefangene Situation gewinnt: sie ist der Ort, an dem die Lernende steht. Sonst
+        // gäbe es zwei verschiedene Antworten auf "was kommt als Nächstes" – eine hier, eine in
+        // der Bereichsübersicht.
+        val started = PathProgress.nextUp(content, progress)?.nextLesson
+            ?.let { next -> remaining.firstOrNull { it.id == next.id } }
         val paths = preferredPaths(progress.profile)
         val preferred = if (paths.isEmpty()) null else remaining.firstOrNull { lesson ->
             content.situations.firstOrNull { it.id == lesson.situationId }?.pathId in paths
         }
-        val lesson = preferred ?: remaining.first()
+        val lesson = started ?: preferred ?: remaining.first()
         return LessonSuggestion(
             lesson = lesson,
             why = whyFor(progress.profile, lesson, content),
@@ -82,8 +205,9 @@ object Personalization {
 
     private fun whyFor(profile: Profile, lesson: Lesson, content: ContentBundle): String {
         val path = content.situations.firstOrNull { it.id == lesson.situationId }?.pathId ?: return ""
-        val reason = ProfileCatalog.reason(profile.reasonId)
-        if (reason != null && path in reason.paths) return "Weil du für ${reason.label} übst"
+        val reason = profile.reasons().mapNotNull { ProfileCatalog.reason(it) }
+            .firstOrNull { path in it.paths }
+        if (reason != null) return "Weil du für ${reason.label} übst"
         val interest = ProfileCatalog.interests.firstOrNull { it.id in profile.interests && path in it.paths }
         if (interest != null) return "Passt zu deinem Interesse: ${interest.label}"
         return ""

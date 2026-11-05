@@ -352,7 +352,7 @@ private fun DictationBody(
             text = "Prüfen",
             enabled = input.isNotBlank() && !checked,
             onClick = {
-                val result = Scorer.score(chunk.en, input)
+                val result = Scorer.score(chunk.en, input, strict = true)
                 grade = result.grade
                 checked = true
                 // Diktat: getippt, nicht gesprochen.

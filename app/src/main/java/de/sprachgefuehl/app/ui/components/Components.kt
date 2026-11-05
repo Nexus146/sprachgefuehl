@@ -497,7 +497,9 @@ fun GardenPlant(
             )
             return@Canvas
         }
-        val stemHeight = h * 0.52f * progress
+        // Auch der erste Trieb bekommt sichtbare Höhe; sonst bleibt die große Gartenfläche
+        // oben leer und wirkt wie eine leere Karte.
+        val stemHeight = h * (0.24f + 0.48f * progress)
         val baseY = potTop
         val topY = baseY - stemHeight
         drawLine(
