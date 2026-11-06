@@ -141,6 +141,9 @@ object Scorer {
         val ratio = matched.size.toDouble() / targetTokens.size.toDouble()
         val contentRatio = if (contentTokens.isEmpty()) ratio
         else contentMatched.size.toDouble() / contentTokens.size.toDouble()
+        // Word order is part of meaning. A sentence with the right words in the wrong order
+        // may be close, but it is not "klar verstanden".
+        val orderRatio = lcs(targetTokens, heard).toDouble() / targetTokens.size.toDouble()
 
         // „Klar verstanden“ verdient nur, wer den Satz wirklich gesagt hat. In kurzen Formeln
         // („How are you?“) sind fast alle Wörter Funktionswörter – dann reichte früher das eine
@@ -148,18 +151,33 @@ object Scorer {
         // eine Deckung über den ganzen Satz.
         val grade = if (strict) {
             when {
-                ratio >= 0.95 && contentRatio >= 0.9 -> 3
-                ratio >= 0.8 && contentRatio >= 0.75 -> 2
+                ratio >= 0.95 && contentRatio >= 0.9 && orderRatio >= 0.9 -> 3
+                ratio >= 0.8 && contentRatio >= 0.75 && orderRatio >= 0.55 -> 2
                 else -> 1
             }
         } else {
             when {
-                ratio >= 0.9 || (contentRatio >= 0.85 && ratio >= 0.6) -> 3
+                (ratio >= 0.9 || (contentRatio >= 0.85 && ratio >= 0.6)) && orderRatio >= 0.7 -> 3
                 ratio >= 0.55 || contentRatio >= 0.6 -> 2
                 else -> 1
             }
         }
-        return VariantScore(grade, maxOf(ratio, contentRatio), missing)
+        return VariantScore(grade, maxOf(ratio, contentRatio, orderRatio), missing)
+    }
+
+    /** Longest common subsequence: rewards the right words in the right order. */
+    private fun lcs(a: List<String>, b: List<String>): Int {
+        if (a.isEmpty() || b.isEmpty()) return 0
+        val previous = IntArray(b.size + 1)
+        val current = IntArray(b.size + 1)
+        for (x in a) {
+            for (j in b.indices) {
+                current[j + 1] = if (x == b[j]) previous[j] + 1
+                else maxOf(previous[j + 1], current[j])
+            }
+            previous.indices.forEach { previous[it] = current[it] }
+        }
+        return previous[b.size]
     }
 
     private data class VariantScore(val grade: Int, val ratio: Double, val missing: List<String>)

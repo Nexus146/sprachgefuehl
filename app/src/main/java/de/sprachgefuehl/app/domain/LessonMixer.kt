@@ -21,11 +21,6 @@ object LessonMixer {
     const val MIN_TASKS = 13
     const val MAX_TASKS = 17
 
-    private val speakingTypes = setOf(
-        "SpeakRepeat", "SpeakFree", "SpeakFillSlot", "TransferTask", "Shadowing",
-        "TranslateToEnglish", "Recall", "Paraphrase", "WhatsAppReply"
-    )
-
     private val stopWords = setOf(
         "a", "an", "the", "to", "of", "in", "on", "at", "for", "and", "or", "is", "am", "are",
         "was", "were", "be", "been", "do", "does", "did", "i", "you", "he", "she", "it", "we",
@@ -93,7 +88,24 @@ object LessonMixer {
         speakFree?.let { result += it }
         grammar?.let { result += it }
         selfCheck?.let { result += it }
-        return addUnderstandingGate(result, content, random)
+        // The round stays inside the advertised frame. Closing tasks keep their place; only
+        // practice steps are trimmed when the generated mix grew too long.
+        val tail = listOfNotNull(speakFree, grammar, selfCheck)
+        val tailIds = tail.map { it.id }.toSet()
+        val body = result.filterNot { it.id in tailIds }.distinctBy { it.id }
+        val room = (MAX_TASKS - tail.size).coerceAtLeast(0)
+        val base = (body.take(room) + tail).distinctBy { it.id }.toMutableList()
+
+        // A short authored core must still become a full round. Use the same task factory so
+        // the added steps carry a chunk, an id and the usual options.
+        var extra = 0
+        while (base.size < MIN_TASKS && chunks.isNotEmpty() && extra < 32) {
+            val chunk = chunks[extra % chunks.size]
+            val type = if (extra % 2 == 0) "MeaningChoice" else "SpeakRepeat"
+            base += task(type, chunk, lesson, content, random, 200 + extra, learner)
+            extra += 1
+        }
+        return addUnderstandingGate(base.distinctBy { it.id }, content, random)
     }
 
     private fun seed(lessonId: String, globalSeed: Long, day: Long, run: Int): Long =
@@ -127,14 +139,7 @@ object LessonMixer {
         )
     }
 
-    private fun skillForType(type: String): Skill? = when (type) {
-        "SpeakRepeat", "TranslateToEnglish", "Recall", "SpeakFree", "TransferTask" -> Skill.SPRECHEN
-        "BuildSentence", "GapFill" -> Skill.GRAMMATIK
-        "MeaningChoice", "SpeakFillSlot" -> Skill.BAUSTEINE
-        "ListenMeaning", "Dictation", "ListenNumber", "MinimalPair" -> Skill.HOEREN
-        "ChooseConnector", "ConnectClauses" -> Skill.VERKNUEPFEN
-        else -> null
-    }
+    private fun skillForType(type: String): Skill? = TaskRegistry.skillFor(type)
 
     private fun pickType(
         learner: Learner,
@@ -291,7 +296,15 @@ object LessonMixer {
         val pick = candidates.randomOrNull(random) ?: return null
         val correct = pick.value.trim('.', ',', '!', '?', ';', ':')
         val blanked = words.toMutableList().also { it[pick.index] = "_____" }.joinToString(" ")
-        val distractors = content.chunks
+        // Distractors come from the same pattern or level, not from any sentence in the
+        // bundle. This keeps a gap-fill grammatically plausible instead of merely random.
+        val family = content.chunks.filter { other ->
+            other.id != chunk.id && (
+                (chunk.patternId.isNotBlank() && other.patternId == chunk.patternId) ||
+                    other.level == chunk.level
+                )
+        }
+        val distractors = family
             .flatMap { it.en.split(Regex(" +")) }
             .map { it.lowercase().trim('.', ',', '!', '?', ';', ':') }
             .filter { it.length >= 3 && it !in stopWords && it != correct.lowercase() }
@@ -355,12 +368,18 @@ object LessonMixer {
                 "Passt zu deiner Auswahl beim Start: Verknüpfen."
             else -> ""
         }
+        val words = connector.words.split(" · ").map { it.trim() }.filter { it.isNotBlank() }
+        val correctWord = words.firstOrNull { word ->
+            Regex("\\b${Regex.escape(word.lowercase())}\\b").containsMatchIn(example.b.lowercase())
+        } ?: words.firstOrNull().orEmpty()
         return base.copy(
             id = "${lesson.id}_mix_connector",
             promptEn = example.a,
             target = example.b,
             model = example.b,
-            options = connector.words.split(" · ").map { Option(text = it) },
+            options = words.map { word ->
+                Option(text = word, correct = word.equals(correctWord, ignoreCase = true))
+            },
             why = why
         )
     }
@@ -508,7 +527,7 @@ object LessonMixer {
     }
 
     /** Wird von der Oberfläche gebraucht, um Sprechaufgaben richtig zu buchen. */
-    fun isSpeaking(type: String): Boolean = type in speakingTypes
+    fun isSpeaking(type: String): Boolean = TaskRegistry.isSpeaking(type)
 
     /** Die tatsächliche Länge dieser Runde – für „Schritt 4 von 11“ außerhalb der Lektion. */
     fun stepCount(lesson: Lesson, content: ContentBundle, progress: Progress, day: Long): Int =

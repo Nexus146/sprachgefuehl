@@ -68,12 +68,17 @@ object NextPlanner {
      * "Was ist fällig?" before "Noch ein Thema". The daily goal decides how long the answer may
      * be – with two minutes left, a nine-minute lesson is the wrong suggestion.
      */
-    fun plan(content: ContentBundle, progress: Progress, now: Long): NextStep? {
-        val today = now / Srs.DAY_MS
+    fun plan(
+        content: ContentBundle,
+        progress: Progress,
+        now: Long,
+        today: Long = now / Srs.DAY_MS
+    ): NextStep? {
         val day = DailyPlan.summary(progress, today)
-        val due = progress.chunkMemory.count { Srs.isDue(it.value, now) }
+        val knownChunks = content.chunks.map { it.id }.toSet()
+        val due = progress.chunkMemory.count { it.key in knownChunks && Srs.isDue(it.value, now) }
         val suggestion = Personalization.suggestion(content, progress)
-        val resume = PathProgress.resumeLesson(content, progress)
+        val resume = PathProgress.resumeLesson(content, progress, today)
         val restLabel = if (day.mood == DayMood.REST) "Heute ist Pausentag" else "Heute dran"
 
         // 1. An open standort check blocks every other recommendation: it decides what comes first.
@@ -92,7 +97,15 @@ object NextPlanner {
 
         // 2. The goal is reached. From here on the app stops nudging – both doors stay open.
         if (day.reachedGoal) {
-            val continueAction = lessonAction(resume?.first, resume?.second, suggestion)
+            val continueLesson = resume?.first ?: suggestion?.lesson
+            val continueAction = continueLesson?.let { lesson ->
+                lessonAction(
+                    lesson,
+                    resume?.second ?: 0,
+                    suggestion,
+                    LessonMixer.stepCount(lesson, content, progress, today)
+                )
+            }
             return NextStep(
                 kind = NextKind.DONE,
                 label = "Für heute geschafft",
@@ -252,10 +265,12 @@ object NextPlanner {
     private fun lessonAction(
         lesson: de.sprachgefuehl.app.data.Lesson?,
         step: Int?,
-        suggestion: LessonSuggestion?
+        suggestion: LessonSuggestion?,
+        totalSteps: Int? = null
     ): NextAction? {
         val target = lesson ?: suggestion?.lesson ?: return null
-        val started = (step ?: 0) in 1 until target.steps.size
+        val total = totalSteps ?: target.steps.size
+        val started = (step ?: 0) in 1 until total
         return NextAction(
             // Kurz halten: der Knopf trägt eine Handlung, nicht den Titel der Lektion.
             label = if (started) "Weitermachen bei Schritt ${(step ?: 0) + 1}" else "Weiterlernen",

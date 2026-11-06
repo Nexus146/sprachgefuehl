@@ -25,25 +25,24 @@ object SkillHistory {
     const val WINDOW_DAYS = 7L
 
     /** One entry per day, written with the first save of that day. */
-    fun record(progress: Progress, now: Long): Progress {
-        val day = now / Srs.DAY_MS
-        if (progress.skillHistory.lastOrNull()?.day == day) return progress
-        val snapshot = SkillSnapshot(day, Skill.entries.map { progress.skills.state(it).rating })
+    fun record(progress: Progress, now: Long, today: Long = now / Srs.DAY_MS): Progress {
+        if (progress.skillHistory.lastOrNull()?.day == today) return progress
+        val snapshot = SkillSnapshot(today, Skill.entries.map { progress.skills.state(it).rating })
         return progress.copy(skillHistory = (progress.skillHistory + snapshot).takeLast(MAX_ENTRIES))
     }
 
     /** The state before the last seven days, or the oldest snapshot there is. */
-    fun baseline(progress: Progress, now: Long): SkillSnapshot? {
-        val cutoff = now / Srs.DAY_MS - WINDOW_DAYS
+    fun baseline(progress: Progress, now: Long, today: Long = now / Srs.DAY_MS): SkillSnapshot? {
+        val cutoff = today - WINDOW_DAYS
         return progress.skillHistory.lastOrNull { it.day <= cutoff }
             ?: progress.skillHistory.firstOrNull()
     }
 
     /** Only areas that really changed a stage; a wobble inside one stage is not a story. */
-    fun movements(progress: Progress, now: Long): List<SkillMovement> {
+    fun movements(progress: Progress, now: Long, today: Long = now / Srs.DAY_MS): List<SkillMovement> {
         if (progress.skillHistory.size < 2) return emptyList()
-        val base = baseline(progress, now) ?: return emptyList()
-        if (base.day == now / Srs.DAY_MS) return emptyList()
+        val base = baseline(progress, now, today) ?: return emptyList()
+        if (base.day == today) return emptyList()
         return Skill.entries.mapNotNull { skill ->
             val index = Skill.entries.indexOf(skill)
             val fromRating = base.ratings.getOrNull(index) ?: return@mapNotNull null

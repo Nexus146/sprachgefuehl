@@ -353,7 +353,9 @@ fun SituationScreen(vm: AppViewModel, state: AppUiState, situationId: String) {
             Spacer(Modifier.height(Spacing.s))
             lessons.forEach { lesson ->
                 val done = lesson.id in progress.completedLessons
-                val step = progress.lessonProgress[lesson.id] ?: 0
+                val session = progress.lessonSession?.takeIf { it.lessonId == lesson.id }
+                val step = session?.index ?: (progress.lessonProgress[lesson.id] ?: 0)
+                val total = session?.steps?.size ?: lesson.steps.size
                 val started = step > 0 && !done
                 SoftCard(
                     modifier = Modifier.padding(bottom = Spacing.s),
@@ -384,7 +386,7 @@ fun SituationScreen(vm: AppViewModel, state: AppUiState, situationId: String) {
                             if (started) {
                                 Spacer(Modifier.height(Spacing.xs))
                                 LinearProgressIndicator(
-                                    progress = { step.toFloat() / lesson.steps.size.coerceAtLeast(1) },
+                                    progress = { step.toFloat() / total.coerceAtLeast(1) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp),

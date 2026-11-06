@@ -22,8 +22,9 @@ class ProgressStore(private val file: File) {
         if (!file.exists()) Progress() else json.decodeFromString(Progress.serializer(), file.readText())
     }.getOrElse { Progress() }
 
+    /** Returns false when the write could not be completed. The caller must surface that. */
     @Synchronized
-    fun save(progress: Progress) {
+    fun save(progress: Progress): Boolean = runCatching {
         val text = json.encodeToString(progress)
         file.parentFile?.mkdirs()
         val temp = File(file.parentFile, file.name + ".tmp")
@@ -37,7 +38,8 @@ class ProgressStore(private val file: File) {
             file.writeText(text)
             temp.delete()
         }
-    }
+        true
+    }.getOrDefault(false)
 
     /** The same document, ready to be shared as a backup file. */
     fun encode(progress: Progress): String = json.encodeToString(progress)

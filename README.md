@@ -76,7 +76,7 @@ app/src/main/java/de/sprachgefuehl/app/
   ui/navigation/               Die vier Tabs
   ui/                          Compose-Screens, Komponenten, Theme
 app/src/main/assets/content/content.json    generierte Inhalte
-app/src/test/                 197 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht und Streak
+app/src/test/                 217 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht, Streak und Lern-Engine
 tools/                        Inhaltskatalog und Generator
 docs/                         Design, Prüfbogen, Test-Checkliste, Store-Vorbereitung
 ```

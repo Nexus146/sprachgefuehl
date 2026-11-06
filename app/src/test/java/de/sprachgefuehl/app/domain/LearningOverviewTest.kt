@@ -53,14 +53,15 @@ class LearningOverviewTest {
 
     @Test
     fun `stable and learning chunks are counted apart`() {
+        val ids = content.chunks.take(3).map { it.id }
         val view = LearningOverview.of(
             content,
             Progress(
                 seed = 1,
                 chunkMemory = mapOf(
-                    "a" to Memory(stage = 4, reps = 3),
-                    "b" to Memory(stage = 2, reps = 1),
-                    "c" to Memory()
+                    ids[0] to Memory(stage = 4, reps = 3),
+                    ids[1] to Memory(stage = 2, reps = 1),
+                    ids[2] to Memory()
                 )
             ),
             now

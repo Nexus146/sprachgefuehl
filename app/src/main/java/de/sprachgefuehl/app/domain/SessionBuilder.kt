@@ -5,6 +5,7 @@ import de.sprachgefuehl.app.data.ErrorCard
 import de.sprachgefuehl.app.data.Lesson
 import de.sprachgefuehl.app.data.Memory
 import de.sprachgefuehl.app.data.Progress
+import kotlin.random.Random
 
 data class DailyRound(
     val reviewChunkIds: List<String>,
@@ -67,8 +68,33 @@ object SessionBuilder {
             .filter { it !in progress.chunkMemory }
         val upcoming = nextLesson(content, progress)?.chunkIds.orEmpty()
         val everything = orderedLessons(content).flatMap { it.chunkIds }
-        return (due + shaky + met + upcoming + everything).distinct().take(limit)
+        val recent = progress.lastPracticeChunkIds.toSet()
+        val candidates = (due + shaky + met + upcoming + everything)
+            .distinct()
+            .sortedBy { if (it in recent) 1 else 0 }
+
+        // At most two sentences per lesson in one round; afterwards fill any remaining slot so
+        // a small content pool never leaves the round short.
+        val picked = mutableListOf<String>()
+        val perLesson = mutableMapOf<String, Int>()
+        for (id in candidates) {
+            val lesson = lessonForChunk(content, id) ?: continue
+            if ((perLesson[lesson] ?: 0) >= 2) continue
+            picked += id
+            perLesson[lesson] = (perLesson[lesson] ?: 0) + 1
+            if (picked.size >= limit) return picked
+        }
+        for (id in candidates) {
+            if (id in picked) continue
+            picked += id
+            if (picked.size >= limit) break
+        }
+        return picked
     }
+
+    private fun lessonForChunk(content: ContentBundle, chunkId: String): String? =
+        content.lessons.firstOrNull { chunkId in it.chunkIds }?.id
+            ?: chunkId.substringBeforeLast('_').takeIf { it.isNotBlank() }
 
     fun remediation(content: ContentBundle, progress: Progress, limit: Int = 3): List<ErrorCard> {
         val cards = content.errorCards.associateBy { it.id }
@@ -94,16 +120,40 @@ object SessionBuilder {
      */
     fun reviewQueue(content: ContentBundle, progress: Progress, now: Long, limit: Int = 10): List<String> {
         val byId = content.chunks.associateBy { it.id }
-        return progress.chunkMemory.entries
+        val entries = progress.chunkMemory.entries
             .filter { it.key in byId }
             .sortedWith(
                 compareBy<Map.Entry<String, Memory>>(
-                    { if (Srs.isDue(it.value, now)) 0 else 1 },
                     { it.value.stage },
-                    { it.value.stability }
+                    { it.value.stability },
+                    { it.key }
                 )
             )
-            .map { it.key }
+        val due = entries.filter { Srs.isDue(it.value, now) }
+        val rest = entries.filterNot { Srs.isDue(it.value, now) }
+        val random = Random(progress.seed xor now)
+        return (mixByLesson(content, due, random) + mixByLesson(content, rest, random))
+            .distinct()
             .take(limit)
+    }
+
+    /** Round-robin over lessons: no two entries from one lesson in a row while others wait. */
+    private fun mixByLesson(
+        content: ContentBundle,
+        entries: List<Map.Entry<String, Memory>>,
+        random: Random
+    ): List<String> {
+        val groups = LinkedHashMap<String, ArrayDeque<String>>()
+        entries.shuffled(random).forEach { entry ->
+            val lesson = lessonForChunk(content, entry.key) ?: "?"
+            groups.getOrPut(lesson) { ArrayDeque() }.addLast(entry.key)
+        }
+        val result = mutableListOf<String>()
+        while (groups.values.any { it.isNotEmpty() }) {
+            groups.values.forEach { queue ->
+                if (queue.isNotEmpty()) result += queue.removeFirst()
+            }
+        }
+        return result
     }
 }

@@ -212,6 +212,7 @@ private fun PracticeSession(
         SessionBuilder.practiceChunks(content, progress, now, limit = 5)
             .mapNotNull { id -> content.chunks.firstOrNull { it.id == id } }
     }
+    LaunchedEffect(key, mode.id) { vm.recordPracticeRound(chunks.map { it.id }) }
     var index by remember(key, mode.id) { mutableIntStateOf(0) }
     var tasks by remember(key, mode.id) { mutableIntStateOf(0) }
     var spoken by remember(key, mode.id) { mutableIntStateOf(0) }

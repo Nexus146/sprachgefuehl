@@ -59,8 +59,9 @@ class NextStepTest {
 
     @Test
     fun `little time left with due sentences becomes a review`() {
+        val dueIds = content.chunks.take(2).map { it.id }
         val progress = day(minutes = 8).copy(
-            chunkMemory = mapOf("a" to Memory(due = 1L, reps = 1), "b" to Memory(due = 1L, reps = 1))
+            chunkMemory = dueIds.associateWith { Memory(due = 1L, reps = 1) }
         )
         val step = plan(progress)
         assertEquals(NextKind.REVIEW, step.kind)
@@ -89,7 +90,7 @@ class NextStepTest {
 
     @Test
     fun `a real backlog outweighs the next story`() {
-        val memories = (0 until 9).associate { "c$it" to Memory(due = 1L, reps = 1) }
+        val memories = content.chunks.take(9).associate { it.id to Memory(due = 1L, reps = 1) }
         val step = plan(Progress(onboarded = true, chunkMemory = memories))
         assertEquals(NextKind.REVIEW, step.kind)
         assertNotNull("Der Weg zur Lektion fehlt", step.alternative)

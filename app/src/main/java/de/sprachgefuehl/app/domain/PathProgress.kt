@@ -107,11 +107,27 @@ object PathProgress {
     }
 
     /** The lesson that was started and not finished, so the app can offer to continue it. */
-    fun resumeLesson(content: ContentBundle, progress: Progress): Pair<Lesson, Int>? {
+    fun resumeLesson(content: ContentBundle, progress: Progress, today: Long = 0L): Pair<Lesson, Int>? {
+        // New rounds carry their exact steps. The index is therefore independent of the day
+        // and of any later change to the task mix.
+        val session = progress.lessonSession
+        if (session != null &&
+            session.lessonId !in progress.completedLessons &&
+            session.steps.isNotEmpty() &&
+            session.index in 1 until session.steps.size
+        ) {
+            content.lessons.firstOrNull { it.id == session.lessonId }?.let { lesson ->
+                return lesson to session.index
+            }
+        }
+
+        // Old progress has no session yet. Keep that path working and compare against the
+        // actual mixed round, not against the shorter authored core.
         val ordered = SessionBuilder.orderedLessons(content)
         ordered.forEach { lesson ->
             val reach = progress.lessonProgress[lesson.id] ?: 0
-            if (reach in 1 until lesson.steps.size && lesson.id !in progress.completedLessons) {
+            val total = if (today > 0L) LessonMixer.stepCount(lesson, content, progress, today) else lesson.steps.size
+            if (reach in 1 until total && lesson.id !in progress.completedLessons) {
                 return lesson to reach
             }
         }
