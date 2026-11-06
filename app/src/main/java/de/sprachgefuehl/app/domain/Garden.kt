@@ -5,16 +5,21 @@ import de.sprachgefuehl.app.data.SessionLog
 
 object Garden {
 
-    fun stageForSessions(sessions: Int): Int = when {
-        sessions >= 15 -> 5
-        sessions >= 10 -> 4
-        sessions >= 6 -> 3
-        sessions >= 3 -> 2
-        sessions >= 1 -> 1
+    fun stageForSessions(sessions: Int): Int = stageForRounds(sessions)
+
+    fun stageForRounds(rounds: Int): Int = when {
+        rounds >= 15 -> 5
+        rounds >= 10 -> 4
+        rounds >= 6 -> 3
+        rounds >= 3 -> 2
+        rounds >= 1 -> 1
         else -> 0
     }
 
-    fun stage(progress: Progress): Int = stageForSessions(progress.sessions.size)
+    private fun rounds(progress: Progress): Int =
+        if (progress.gardenRounds > 0) progress.gardenRounds else progress.sessions.size
+
+    fun stage(progress: Progress): Int = stageForRounds(rounds(progress))
 
     fun growth(progress: Progress): Float = stage(progress) / 5f
 
@@ -38,10 +43,10 @@ object Garden {
 
     /** How far the next stage is, in whole rounds. Null when the garden is fully grown. */
     fun nextStep(progress: Progress): String? {
-        val sessions = progress.sessions.size
-        val next = listOf(1, 3, 6, 10, 15).firstOrNull { it > sessions } ?: return null
-        val remaining = next - sessions
-        return "Noch $remaining ${if (remaining == 1) "Runde" else "Runden"} bis „${shortLabel(stageForSessions(next))}“"
+        val rounds = rounds(progress)
+        val next = listOf(1, 3, 6, 10, 15).firstOrNull { it > rounds } ?: return null
+        val remaining = next - rounds
+        return "Noch $remaining ${if (remaining == 1) "Runde" else "Runden"} bis „${shortLabel(stageForRounds(next))}“"
     }
 
     /**
@@ -62,7 +67,11 @@ object Garden {
         } else {
             progress.sessions + session
         }
-        val next = progress.copy(sessions = sessions, lastSessionDay = day)
+        val next = progress.copy(
+            sessions = sessions,
+            gardenRounds = progress.gardenRounds + 1,
+            lastSessionDay = day
+        )
         return next.copy(gardenGrowth = growth(next))
     }
 }

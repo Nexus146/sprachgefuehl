@@ -8,6 +8,7 @@ import de.sprachgefuehl.app.data.ContentBundle
 import de.sprachgefuehl.app.data.ContentRepository
 import de.sprachgefuehl.app.data.LearningRepository
 import de.sprachgefuehl.app.data.Lesson
+import de.sprachgefuehl.app.data.LessonSession
 import de.sprachgefuehl.app.data.Progress
 import de.sprachgefuehl.app.data.Profile
 import de.sprachgefuehl.app.data.ProgressStore
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDate
 
 data class AppUiState(
     val loading: Boolean = true,
@@ -165,7 +167,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         openTab(AppTab.START)
     }
 
+    /** Starts or resumes the one active lesson round. */
+    fun startLesson(lessonId: String): LessonSession? = learning?.startLesson(lessonId)
+
+    fun today(): Long = learning?.today() ?: LocalDate.now().toEpochDay()
+
+    fun dayOf(millis: Long): Long = learning?.dayOf(millis)
+        ?: java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate().toEpochDay()
+
     fun recordStep(lessonId: String, stepIndex: Int) = learning?.recordStep(lessonId, stepIndex)
+
+    fun recordPracticeRound(chunkIds: List<String>) = learning?.recordPracticeRound(chunkIds)
 
     /** One graded attempt; [skills] names what the exercise really trained. */
     fun recordSpeaking(
@@ -176,6 +189,26 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         if (chunkId.isNotBlank()) learning?.reviewChunk(chunkId, grade, usedHint, skills)
     }
+
+    fun recordAnswer(
+        chunkId: String,
+        grade: Int,
+        usedHint: Boolean,
+        skills: List<Skill>,
+        cardId: String,
+        lessonId: String,
+        lessonTitle: String,
+        target: String,
+        heard: String,
+        mistakeSkill: String,
+        trackMistake: Boolean,
+        checkSkill: Skill?,
+        checkCorrect: Boolean,
+        level: Int
+    ) = learning?.recordAnswer(
+        chunkId, grade, usedHint, skills, cardId, lessonId, lessonTitle, target, heard,
+        mistakeSkill, trackMistake, checkSkill, checkCorrect, level
+    )
 
     fun recordError(cardId: String) = learning?.recordError(cardId)
 
@@ -260,6 +293,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun nextLesson(): Lesson? = suggestion()?.lesson
 
     fun dueCount(): Int = learning?.dueReviewCount() ?: 0
+
+    fun diagnosticTrace(lessonId: String): String? = learning?.diagnosticTrace(lessonId)
 
     fun lesson(id: String): Lesson? = learning?.content?.lessons?.firstOrNull { it.id == id }
 

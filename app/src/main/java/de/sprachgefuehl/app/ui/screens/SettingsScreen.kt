@@ -63,7 +63,12 @@ import de.sprachgefuehl.app.ui.theme.Spacing
 fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
     val settings = state.progress.settings
     val overview = state.content?.let { content ->
-        LearningOverview.of(content, state.progress, vm.repository?.now() ?: System.currentTimeMillis())
+        LearningOverview.of(
+            content,
+            state.progress,
+            vm.repository?.now() ?: System.currentTimeMillis(),
+            vm.today()
+        )
     }
     val speech = rememberSpeechController()
     val context = LocalContext.current

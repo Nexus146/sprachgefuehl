@@ -1,7 +1,10 @@
 package de.sprachgefuehl.app.data
 
 import de.sprachgefuehl.app.domain.Checkup
+import de.sprachgefuehl.app.domain.ContentIndex
+import de.sprachgefuehl.app.domain.Diagnostics
 import de.sprachgefuehl.app.domain.Garden
+import de.sprachgefuehl.app.domain.LessonMixer
 import de.sprachgefuehl.app.domain.Milestone
 import de.sprachgefuehl.app.domain.Milestones
 import de.sprachgefuehl.app.domain.Personalization
@@ -14,25 +17,80 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.max
 import kotlin.random.Random
 
 class LearningRepository(
     val content: ContentBundle,
     private val store: ProgressStore,
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val zone: ZoneId = ZoneId.systemDefault()
 ) {
-    private val _progress = MutableStateFlow(store.load())
+    private val index = ContentIndex.of(content)
+    private val _progress = MutableStateFlow(index.migrate(store.load(), content.version))
     val progress: StateFlow<Progress> = _progress.asStateFlow()
 
+    private val _saveFailed = MutableStateFlow(false)
+    val saveFailed: StateFlow<Boolean> = _saveFailed.asStateFlow()
+
+    /**
+     * Serialized so an answer, the study timer and a settings change cannot overwrite each
+     * other. The save result is kept; a failed write must not look like a successful one.
+     */
+    @Synchronized
     private fun update(transform: (Progress) -> Progress) {
-        // Every save passes the daily snapshot, so the week can show movement without a timer.
-        val next = SkillHistory.record(transform(_progress.value), now())
+        val today = today()
+        val next = SkillHistory.record(transform(_progress.value), now(), today)
         _progress.value = next
-        store.save(next)
+        _saveFailed.value = !store.save(next)
     }
 
     fun now(): Long = clock()
+
+    /** Local calendar day; SRS timestamps stay absolute. */
+    fun today(): Long = dayOf(now())
+
+    fun dayOf(millis: Long): Long =
+        Instant.ofEpochMilli(millis).atZone(zone).toLocalDate().toEpochDay()
+
+    /**
+     * Creates the one active round and stores its concrete steps. Opening the same lesson again
+     * returns the existing round; starting a different lesson replaces it.
+     */
+    @Synchronized
+    fun startLesson(lessonId: String): LessonSession? {
+        val current = _progress.value
+        current.lessonSession?.let { existing ->
+            if (existing.lessonId == lessonId &&
+                existing.steps.isNotEmpty() &&
+                lessonId !in current.completedLessons
+            ) return existing
+        }
+        val lesson = content.lessons.firstOrNull { it.id == lessonId } ?: return null
+        val steps = LessonMixer.steps(lesson, content, current, today())
+        if (steps.isEmpty()) return null
+        // A finished lesson is a deliberate repeat: start the new round at its first task.
+        val start = if (lessonId in current.completedLessons) 0
+        else (current.lessonProgress[lessonId] ?: 0).coerceIn(0, steps.lastIndex)
+        val session = LessonSession(
+            lessonId = lesson.id,
+            runId = current.lessonRuns[lesson.id] ?: 0,
+            startedDay = today(),
+            steps = steps,
+            index = start,
+            startedAt = now()
+        )
+        update { progress ->
+            progress.copy(
+                lessonSession = session,
+                lessonProgress = progress.lessonProgress + (lesson.id to start)
+            )
+        }
+        return session
+    }
 
     fun setPlacement(level: Int, score: Int, selfRating: Int) = update {
         it.copy(
@@ -75,7 +133,7 @@ class LearningRepository(
      */
     fun recordLearningTime(seconds: Int) {
         if (seconds <= 0) return
-        val day = now() / Srs.DAY_MS
+        val day = today()
         update { progress ->
             progress.copy(
                 studySeconds = progress.studySeconds + seconds,
@@ -129,7 +187,7 @@ class LearningRepository(
 
     /** "Passt noch" – the profile is confirmed without changing a thing. */
     fun markProfileReviewed() = update {
-        it.copy(profile = it.profile.copy(reviewedDay = now() / Srs.DAY_MS))
+        it.copy(profile = it.profile.copy(reviewedDay = today()))
     }
 
     fun updatePlacementLevel(level: Int) = update { it.copy(placementLevel = level.coerceIn(0, 2)) }
@@ -145,16 +203,23 @@ class LearningRepository(
     fun exportProgress(): String = store.encode(_progress.value)
 
     /** Accepts a validated backup document and replaces the current progress. */
+    @Synchronized
     fun importProgress(text: String): Boolean {
-        val decoded = store.decode(text) ?: return false
+        val decoded = store.decode(text)?.let { index.migrate(it, content.version) } ?: return false
         _progress.value = decoded
-        store.save(decoded)
+        _saveFailed.value = !store.save(decoded)
         return true
     }
 
     fun recordStep(lessonId: String, stepIndex: Int) = update { progress ->
-        val current = progress.lessonProgress[lessonId] ?: 0
-        progress.copy(lessonProgress = progress.lessonProgress + (lessonId to max(current, stepIndex + 1)))
+        val next = max(progress.lessonProgress[lessonId] ?: 0, stepIndex + 1)
+        val session = progress.lessonSession
+            ?.takeIf { it.lessonId == lessonId }
+            ?.let { existing -> existing.copy(index = max(existing.index, next)) }
+        progress.copy(
+            lessonProgress = progress.lessonProgress + (lessonId to next),
+            lessonSession = session
+        )
     }
 
     /**
@@ -187,6 +252,86 @@ class LearningRepository(
     }
 
     /**
+     * One checked answer written as one state transition. Memory, error card, mistake list and
+     * skill profile all see the same snapshot, and the JSON file is written only once.
+     */
+    @Synchronized
+    fun recordAnswer(
+        chunkId: String,
+        grade: Int,
+        usedHint: Boolean,
+        skills: List<Skill>,
+        cardId: String,
+        lessonId: String,
+        lessonTitle: String,
+        target: String,
+        heard: String,
+        mistakeSkill: String,
+        trackMistake: Boolean,
+        checkSkill: Skill?,
+        checkCorrect: Boolean,
+        level: Int
+    ) = update { progress ->
+        var next = progress
+        if (cardId.isNotBlank()) {
+            next = next.copy(
+                errorCounts = next.errorCounts + (cardId to (next.errorCounts[cardId] ?: 0) + 1),
+                skills = Skills.observe(next.skills, Skill.GRAMMATIK, 30, now())
+            )
+        }
+        if (chunkId.isNotBlank()) {
+            val signal = Skills.gradeSignal(grade, usedHint)
+            val observed = skills.fold(next.skills) { profile, skill ->
+                Skills.observe(profile, skill, signal, now())
+            }
+            next = next.copy(
+                chunkMemory = next.chunkMemory + (chunkId to Srs.review(next.memoryFor(chunkId), grade, now(), usedHint)),
+                skills = observed
+            )
+            if (trackMistake) {
+                if (grade < 2) {
+                    val entry = Mistake(
+                        chunkId = chunkId,
+                        lessonId = lessonId,
+                        lessonTitle = lessonTitle,
+                        target = target,
+                        heard = heard.trim().take(120),
+                        day = today(),
+                        skill = mistakeSkill,
+                        cardId = cardId
+                    )
+                    next = next.copy(
+                        mistakes = (next.mistakes.filterNot { it.chunkId == chunkId } + entry).takeLast(24)
+                    )
+                } else {
+                    val resolvedCard = next.mistakes.firstOrNull { it.chunkId == chunkId }
+                        ?.cardId.orEmpty()
+                    val counts = if (resolvedCard.isBlank()) next.errorCounts else {
+                        val left = (next.errorCounts[resolvedCard] ?: 0) - 1
+                        if (left <= 0) next.errorCounts - resolvedCard
+                        else next.errorCounts + (resolvedCard to left)
+                    }
+                    next = next.copy(
+                        mistakes = next.mistakes.filterNot { it.chunkId == chunkId },
+                        errorCounts = counts
+                    )
+                }
+            }
+        }
+        if (checkSkill != null) {
+            next = next.copy(
+                skills = Skills.observe(
+                    next.skills,
+                    checkSkill,
+                    Skills.signal(checkCorrect, level),
+                    now()
+                )
+            )
+        }
+        next
+    }
+
+    /**
      * Ein Fehler wird nicht nur gezählt, sondern mit Satz und Gehörtem gemerkt. Pro Baustein
      * bleibt der jüngste Eintrag; die Liste ist begrenzt, damit eine Sicherung klein bleibt.
      */
@@ -200,7 +345,7 @@ class LearningRepository(
         cardId: String
     ) {
         if (chunkId.isBlank()) return
-        val day = now() / Srs.DAY_MS
+        val day = today()
         update { progress ->
             val entry = Mistake(
                 chunkId = chunkId,
@@ -221,7 +366,16 @@ class LearningRepository(
     fun resolveMistake(chunkId: String) {
         if (chunkId.isBlank()) return
         update { progress ->
-            progress.copy(mistakes = progress.mistakes.filterNot { it.chunkId == chunkId })
+            val cardId = progress.mistakes.firstOrNull { it.chunkId == chunkId }?.cardId.orEmpty()
+            val counts = if (cardId.isBlank()) progress.errorCounts else {
+                val left = (progress.errorCounts[cardId] ?: 0) - 1
+                if (left <= 0) progress.errorCounts - cardId
+                else progress.errorCounts + (cardId to left)
+            }
+            progress.copy(
+                mistakes = progress.mistakes.filterNot { it.chunkId == chunkId },
+                errorCounts = counts
+            )
         }
     }
 
@@ -231,18 +385,22 @@ class LearningRepository(
      * [speakingTasks] zählt nur, was die Lernende wirklich gesprochen hat – ein mit "Weiter"
      * übersprungener Sprechschritt ist keine Sprechaufgabe.
      */
+    @Synchronized
     fun completeLesson(lesson: Lesson, speakingTasks: Int, seconds: Int = 0): Boolean {
-        val before = _progress.value
-        if (lesson.id in before.completedLessons) return false
+        var completed = false
         val canDoIds = content.canDo.filter { it.lessonId == lesson.id }.map { it.id }.toSet()
-        val day = now() / Srs.DAY_MS
+        val day = today()
         // Gemessene Zeit ersetzt die Schätzung, sobald es eine gibt.
         val minutes = if (seconds > 0) max(1, (seconds + 59) / 60) else lesson.xpMinutes
         update { progress ->
+            if (lesson.id in progress.completedLessons) return@update progress
+            completed = true
             val withLesson = progress.copy(
                 completedLessons = progress.completedLessons + lesson.id,
                 canDo = progress.canDo + canDoIds,
-                lessonRuns = progress.lessonRuns + (lesson.id to ((progress.lessonRuns[lesson.id] ?: 0) + 1))
+                lessonRuns = progress.lessonRuns + (lesson.id to ((progress.lessonRuns[lesson.id] ?: 0) + 1)),
+                // Closing the round ends its persisted session.
+                lessonSession = progress.lessonSession?.takeUnless { it.lessonId == lesson.id }
             )
             // Die Sätze der Lektion gehören ab jetzt zur Sammlung – auch wenn diesmal nicht
             // gesprochen wurde. Sonst hätte eine Lektion ohne Mikrofon nichts zum Wiederholen.
@@ -254,11 +412,11 @@ class LearningRepository(
                 seeded, day, minutes, speakingTasks, lesson.chunkIds.size
             )
         }
-        return true
+        return completed
     }
 
     fun recordReviewSession(minutes: Int, speakingTasks: Int, seconds: Int = 0) {
-        val day = now() / Srs.DAY_MS
+        val day = today()
         val measured = if (seconds > 0) max(1, (seconds + 59) / 60) else minutes
         update { progress -> Garden.recordSession(progress, day, measured, speakingTasks, 0) }
     }
@@ -268,7 +426,7 @@ class LearningRepository(
             id = "rec_${now()}",
             label = label,
             path = path,
-            day = now() / Srs.DAY_MS
+            day = today()
         )
         progress.copy(recordings = list.takeLast(40))
     }
@@ -280,7 +438,30 @@ class LearningRepository(
         update { progress -> progress.copy(recordings = progress.recordings.filterNot { it.id == id }) }
     }
 
-    fun reset() = update { Progress() }
+    fun reset() = update { Progress(contentVersion = content.version) }
 
-    fun dueReviewCount(): Int = _progress.value.chunkMemory.count { Srs.isDue(it.value, now()) }
+    /** Remembers what the last practice round worked on, so the next one can vary. */
+    fun recordPracticeRound(chunkIds: List<String>) = update {
+        it.copy(lastPracticeChunkIds = chunkIds.distinct().take(20))
+    }
+
+    fun dueReviewCount(): Int = _progress.value.chunkMemory.count {
+        it.key in index.chunkIds && Srs.isDue(it.value, now())
+    }
+
+    /** Exportable local trace for support and tests; it never leaves the device by itself. */
+    fun diagnosticTrace(lessonId: String): String? {
+        val progress = _progress.value
+        val lesson = content.lessons.firstOrNull { it.id == lessonId } ?: return null
+        val session = progress.lessonSession?.takeIf { it.lessonId == lessonId }
+        val steps = session?.steps ?: LessonMixer.steps(lesson, content, progress, today())
+        return Diagnostics.trace(
+            contentVersion = progress.contentVersion,
+            startedDay = session?.startedDay ?: today(),
+            seed = progress.seed,
+            lesson = lesson,
+            steps = steps,
+            index = session?.index ?: (progress.lessonProgress[lessonId] ?: 0)
+        ).render()
+    }
 }

@@ -70,7 +70,7 @@ import de.sprachgefuehl.app.domain.Skill
 import de.sprachgefuehl.app.domain.Streak
 import de.sprachgefuehl.app.domain.Garden
 import de.sprachgefuehl.app.domain.Scorer
-import de.sprachgefuehl.app.domain.TaskFormats
+import de.sprachgefuehl.app.domain.TaskRegistry
 import de.sprachgefuehl.app.speech.SpeechAttempt
 import de.sprachgefuehl.app.ui.components.BigButton
 import de.sprachgefuehl.app.ui.components.DividerLine
@@ -130,22 +130,45 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
     }
     val speech = rememberSpeechController()
     val settings = state.progress.settings
-    // Der Aufgabenmix bleibt für diesen Tag und Lektionslauf stabil: ein Neustart mitten in
-    // der Stunde setzt an derselben Stelle fort, eine spätere Runde sieht anders aus.
-    val today = remember { (vm.repository?.now() ?: System.currentTimeMillis()) / 86_400_000L }
-    val sessionSteps = remember(lesson.id, state.progress.lessonRuns[lesson.id], state.progress.seed) {
-        LessonMixer.steps(lesson, content, state.progress, today)
+    var finished by remember { mutableStateOf(false) }
+    var completedSeconds by remember { mutableIntStateOf(0) }
+    var newMilestones by remember { mutableStateOf<List<Milestone>>(emptyList()) }
+    val deferredCards = remember { mutableStateListOf<ErrorCard>() }
+
+    // The round is created once and stored with its concrete steps. A new day or a new task
+    // mix can therefore never move the saved index onto a different task.
+    val activeSession = state.progress.lessonSession?.takeIf { it.lessonId == lesson.id }
+    LaunchedEffect(lesson.id) { vm.startLesson(lesson.id) }
+
+    if (finished) {
+        LessonComplete(
+            lesson = lesson,
+            state = state.progress,
+            speech = speech,
+            deferredCards = deferredCards.toList(),
+            milestones = newMilestones,
+            seconds = completedSeconds,
+            today = vm.today(),
+            onExit = onExit
+        )
+        return
     }
-    val startIndex = (state.progress.lessonProgress[lesson.id] ?: 0).coerceIn(0, sessionSteps.lastIndex)
+
+    if (activeSession == null || activeSession.steps.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Lektion wird vorbereitet …", style = MaterialTheme.typography.bodyLarge)
+        }
+        return
+    }
+
+    val sessionSteps = activeSession.steps
+    val startIndex = activeSession.index.coerceIn(0, sessionSteps.lastIndex)
     var index by rememberSaveable(lesson.id) { mutableIntStateOf(startIndex) }
     var feedback by remember { mutableStateOf<FeedbackState?>(null) }
     var attempts by remember { mutableIntStateOf(0) }
     var hintLevel by remember { mutableIntStateOf(0) }
-    var finished by remember { mutableStateOf(false) }
-    var newMilestones by remember { mutableStateOf<List<Milestone>>(emptyList()) }
     // Nur wirklich gesprochene Aufgaben zählen – nicht die, die getippt wurden.
     var spokenSteps by remember(lesson.id) { mutableIntStateOf(0) }
-    val deferredCards = remember { mutableStateListOf<ErrorCard>() }
 
     val step = sessionSteps.getOrNull(index) ?: sessionSteps.last()
     val total = sessionSteps.size
@@ -169,7 +192,8 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
         reportTime()
         vm.recordStep(lesson.id, index)
         if (index >= sessionSteps.lastIndex) {
-            vm.completeLesson(lesson.id, spokenSteps, elapsedSeconds())
+            completedSeconds = elapsedSeconds()
+            vm.completeLesson(lesson.id, spokenSteps, completedSeconds)
             newMilestones = vm.celebrateMilestones()
             finished = true
         } else {
@@ -198,59 +222,38 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
             return
         }
         val target = step.target.ifBlank { step.model }
-        val speakingTypes = setOf(
-            "SpeakRepeat", "SpeakFree", "SpeakFillSlot", "TransferTask", "Shadowing",
-            "TranslateToEnglish", "Recall", "Paraphrase", "WhatsAppReply"
-        )
-        val diagnosisId = if (outcome.heard.isNotBlank() && target.isNotBlank() && step.type in speakingTypes) {
+        val speaking = TaskRegistry.isSpeaking(step.type)
+        val diagnosisId = if (outcome.heard.isNotBlank() && target.isNotBlank() && speaking) {
             ErrorDiagnosis.diagnose(target, outcome.heard, step.pillarId)
         } else ""
         val card = content.errorCards.firstOrNull { it.id == diagnosisId }
-        if (card != null) {
-            vm.recordError(card.id)
-            if (!settings.explainImmediately && card !in deferredCards) deferredCards.add(card)
-        }
+        if (card != null && !settings.explainImmediately && card !in deferredCards) deferredCards.add(card)
         val visibleCard = if (settings.explainImmediately) card else null
         val stepSkill = skillForStep(step.type)
-        // Nur echte Sprechaufgaben zählen als Sprechen. Diktat ist Hören, Lücke ist Grammatik.
-        if (step.chunkId.isNotBlank()) {
-            vm.recordSpeaking(
-                step.chunkId,
-                outcome.grade,
-                outcome.usedHint,
-                skills = if (step.type in speakingTypes) listOf(Skill.BAUSTEINE, Skill.SPRECHEN)
-                else listOf(stepSkill ?: Skill.BAUSTEINE)
-            )
+        val level = when {
+            lesson.level.startsWith("B1") -> 2
+            lesson.level.startsWith("A2") -> 1
+            else -> 0
         }
-        // Ein Fehler wird mit Satz und Gehörtem gemerkt und kommt in einer späteren Lektion
-        // zurück. Eine richtige Antwort auf einen eingestreuten Satz löst den Eintrag auf.
-        if (step.type != "SelfCheck" && step.chunkId.isNotBlank()) {
-            if (outcome.grade < 2) {
-                vm.recordMistake(
-                    chunkId = step.chunkId,
-                    lessonId = lesson.id,
-                    lessonTitle = lesson.title,
-                    target = target,
-                    heard = outcome.heard,
-                    skill = stepSkill,
-                    cardId = card?.id.orEmpty()
-                )
-            } else {
-                // Eine richtige Antwort löst den Eintrag – auch wenn die Herkunft fehlt.
-                vm.resolveMistake(step.chunkId)
-            }
-        }
-        if (step.type in speakingTypes && outcome.heard.isNotBlank() && outcome.spoken) spokenSteps += 1
-        // The same answer also feeds the skill profile: one check, two uses.
-        val checkSkill = stepSkill
-        if (checkSkill != null) {
-            val level = when {
-                lesson.level.startsWith("B1") -> 2
-                lesson.level.startsWith("A2") -> 1
-                else -> 0
-            }
-            vm.recordCheck(checkSkill, outcome.grade >= 2, level)
-        }
+        // One answer, one update: card, memory, mistake and skill profile see the same snapshot.
+        vm.recordAnswer(
+            chunkId = step.chunkId,
+            grade = outcome.grade,
+            usedHint = outcome.usedHint,
+            skills = if (speaking) listOf(Skill.BAUSTEINE, Skill.SPRECHEN)
+            else listOf(stepSkill ?: Skill.BAUSTEINE),
+            cardId = card?.id.orEmpty(),
+            lessonId = lesson.id,
+            lessonTitle = lesson.title,
+            target = target,
+            heard = outcome.heard,
+            mistakeSkill = stepSkill?.id.orEmpty(),
+            trackMistake = step.type != "SelfCheck",
+            checkSkill = stepSkill,
+            checkCorrect = outcome.grade >= 2,
+            level = level
+        )
+        if (speaking && outcome.heard.isNotBlank() && outcome.spoken) spokenSteps += 1
         if (outcome.grade >= 2) {
             stepDone = true
             val origin = step.originTitle
@@ -287,19 +290,6 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
                 card = visibleCard
             )
         }
-    }
-
-    if (finished) {
-        LessonComplete(
-            lesson = lesson,
-            state = state.progress,
-            speech = speech,
-            deferredCards = deferredCards.toList(),
-            milestones = newMilestones,
-            seconds = elapsedSeconds(),
-            onExit = onExit
-        )
-        return
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -342,7 +332,7 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.s)
                 )
-                val shownSkill = TaskFormats.skillFor(step.type)
+                val shownSkill = TaskRegistry.skillFor(step.type)
                 if (shownSkill != null) {
                     Text(
                         "Übt: ${shownSkill.label}",
@@ -438,41 +428,12 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
 }
 
 /** Welcher Bereich durch diese Aufgabe wirklich trainiert wird. */
-private fun skillForStep(type: String): Skill? = when (type) {
-    "ComprehensionDeep", "UnderstandFastSpeech", "MinimalPair", "ListenNumber",
-    "ListenMeaning", "Dictation" -> Skill.HOEREN
-    "GrammarSpot", "BuildSentence", "GapFill" -> Skill.GRAMMATIK
-    "ChooseConnector", "ConnectClauses" -> Skill.VERKNUEPFEN
-    "SpeakFree", "TransferTask", "Paraphrase", "WhatsAppReply", "Recall" -> Skill.SPRECHEN
-    "MeaningChoice", "SpeakFillSlot" -> Skill.BAUSTEINE
-    else -> null
-}
+private fun skillForStep(type: String): Skill? = TaskRegistry.skillFor(type)
 
-private fun stepNeedsAnswer(step: Step): Boolean = step.type in setOf(
-    "ComprehensionDeep", "GrammarSpot", "ChooseConnector", "ConnectClauses",
-    "UnderstandFastSpeech", "ListenNumber", "MinimalPair", "BuildSentence",
-    "SpeakRepeat", "SpeakFillSlot", "SpeakFree", "Shadowing", "Paraphrase",
-    "TranslateToEnglish", "Recall", "TransferTask", "WhatsAppReply", "MeaningChoice",
-    "ListenMeaning", "GapFill", "Dictation", "SelfCheck"
-)
+private fun stepNeedsAnswer(step: Step): Boolean = TaskRegistry.needsAnswer(step.type)
 
 /** Ein Wort, das sagt, wo im Ablauf man gerade ist – vor dem Titel, nicht statt seiner. */
-private fun stepKind(step: Step): String = when (step.type) {
-    "DialogInput", "UnderstandFastSpeech" -> "Hören"
-    "ComprehensionDeep", "ListenNumber", "MinimalPair" -> "Verstehen"
-    "Noticing" -> "Die Form"
-    "ChunkIntro" -> "Baustein"
-    "BuildSentence" -> "Wortstellung"
-    "MeaningChoice" -> "Bedeutung"
-    "ListenMeaning" -> "Hören"
-    "GapFill" -> "Lücke"
-    "Dictation" -> "Diktat"
-    "Recall" -> "Abrufen"
-    "GrammarSpot", "ChooseConnector", "ConnectClauses" -> "Grammatik"
-    "TransferTask" -> "Übertragen"
-    "SelfCheck" -> "Abschluss"
-    else -> "Sprechen"
-}
+private fun stepKind(step: Step): String = TaskRegistry.labelFor(step.type)
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -1082,15 +1043,30 @@ private fun SpeakBody(
                     message = attempt.error
                 } else {
                     message = ""
-                    spoken = attempt.transcript
+                    // Recognition often returns several hypotheses. Score all of them and keep
+                    // the best one instead of letting the first guess decide the grade.
+                    val alternatives = (listOf(attempt.transcript) + attempt.alternatives)
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                    val best = alternatives.maxByOrNull { candidate ->
+                        Scorer.score(
+                            target = target,
+                            heard = candidate,
+                            requiredForm = step.requiredForm,
+                            accept = step.accept,
+                            usedHint = hintLevel > 0
+                        ).grade
+                    } ?: attempt.transcript
+                    spoken = best
                     val result = Scorer.score(
                         target = target,
-                        heard = attempt.transcript,
+                        heard = best,
                         requiredForm = step.requiredForm,
                         accept = step.accept,
                         usedHint = hintLevel > 0
                     )
-                    onOutcome(Outcome(result.grade, attempt.transcript, hintLevel > 0))
+                    onOutcome(Outcome(result.grade, best, hintLevel > 0))
                 }
             }
         )
@@ -1297,6 +1273,7 @@ private fun LessonComplete(
     deferredCards: List<ErrorCard>,
     milestones: List<Milestone>,
     seconds: Int,
+    today: Long,
     onExit: () -> Unit
 ) {
     val stage = Garden.stage(state)
@@ -1322,7 +1299,7 @@ private fun LessonComplete(
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
         )
-        val streak = Streak.of(state, System.currentTimeMillis() / 86_400_000L)
+        val streak = Streak.of(state, today)
         if (streak.current > 0) {
             Text(
                 Streak.line(streak),

@@ -138,9 +138,26 @@ data class Mistake(
     val cardId: String = ""
 )
 
+/**
+ * The exact lesson round the learner is in. The generated steps are stored with it, so resuming
+ * does not depend on the day, a new random seed or a changed task count. Only one lesson can be
+ * active at a time.
+ */
+@Serializable
+data class LessonSession(
+    val lessonId: String = "",
+    val runId: Int = 0,
+    val startedDay: Long = 0L,
+    val steps: List<Step> = emptyList(),
+    val index: Int = 0,
+    val startedAt: Long = 0L
+)
+
 @Serializable
 data class Progress(
     val onboarded: Boolean = false,
+    /** Version of content.json this progress was last reconciled with. */
+    val contentVersion: Int = 1,
     val placementLevel: Int = 1,
     val placementScore: Int = 0,
     val selfRating: Int = 1,
@@ -152,7 +169,11 @@ data class Progress(
     val canDo: Set<String> = emptySet(),
     val sessions: List<SessionLog> = emptyList(),
     val gardenGrowth: Float = 0f,
+    /** Completed rounds, not active days: several lessons on one day still grow the garden. */
+    val gardenRounds: Int = 0,
     val lastSessionDay: Long = 0L,
+    /** Chunks from the last practice round, so the next round can avoid repeating them. */
+    val lastPracticeChunkIds: List<String> = emptyList(),
     val recordings: List<RecordingRef> = emptyList(),
     val milestones: Set<String> = emptySet(),
     val profile: Profile = Profile(),
@@ -169,6 +190,8 @@ data class Progress(
     val homeIntroSeen: Boolean = false,
     /** Wie oft eine Lektion schon begonnen wurde – dreht den Aufgabenpool weiter. */
     val lessonRuns: Map<String, Int> = emptyMap(),
+    /** Die laufende Lektion mit ihren festen Schritten; null, wenn keine offen ist. */
+    val lessonSession: LessonSession? = null,
     /** Wirklich gemessene Lernzeit in Sekunden, nicht geschätzt. */
     val studySeconds: Int = 0,
     /** Gemessene Sekunden je Kalendertag (Epochentag). */

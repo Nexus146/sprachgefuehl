@@ -57,12 +57,17 @@ data class LearningOverview(
 ) {
     companion object {
 
-        fun of(content: ContentBundle, progress: Progress, now: Long): LearningOverview {
-            val today = now / Srs.DAY_MS
+        fun of(
+            content: ContentBundle,
+            progress: Progress,
+            now: Long,
+            today: Long = now / Srs.DAY_MS
+        ): LearningOverview {
             val days = (0..6).map { today - 6 + it }
             val sessions = progress.sessions.filter { it.day in days }
-            val memories = progress.chunkMemory.values
-            val next = NextPlanner.plan(content, progress, now)
+            val knownChunks = content.chunks.map { it.id }.toSet()
+            val memories = progress.chunkMemory.filterKeys { it in knownChunks }.values
+            val next = NextPlanner.plan(content, progress, now, today)
             val nextLesson = lessonFor(next, content)
             val steps = nextLesson
                 ?.let { LessonMixer.steps(it, content, progress, today) }
@@ -80,11 +85,11 @@ data class LearningOverview(
                     lessons = content.lessons.size,
                     patterns = content.patterns.size,
                     formats = TaskFormats.all.size,
-                    collected = progress.chunkMemory.size,
+                    collected = memories.size,
                     stable = memories.count { it.stage >= 4 },
                     learning = memories.count { it.reps > 0 && it.stage < 4 },
-                    due = progress.chunkMemory.count { Srs.isDue(it.value, now) },
-                    openMistakes = progress.mistakes.size
+                    due = progress.chunkMemory.count { it.key in knownChunks && Srs.isDue(it.value, now) },
+                    openMistakes = progress.mistakes.count { it.chunkId in knownChunks }
                 ),
                 week = WeekFacts(
                     activeDays = days.count { progress.measuredMinutesOn(it) > 0 },
@@ -96,7 +101,7 @@ data class LearningOverview(
                     goal = progress.profile.dailyMinutes.takeIf { it > 0 } ?: 10
                 ),
                 skills = Skills.views(progress.skills),
-                movements = SkillHistory.movements(progress, now),
+                movements = SkillHistory.movements(progress, now, today),
                 focus = ProfileCatalog.focusLabels(
                     progress.profile.reasons() + progress.profile.interests
                 ),
@@ -117,7 +122,7 @@ data class LearningOverview(
                         )
                     },
                 nextLessonTitle = nextLesson?.title.orEmpty(),
-                completedLessons = progress.completedLessons.size,
+                completedLessons = progress.completedLessons.count { id -> content.lessons.any { it.id == id } },
                 activeDaysTotal = progress.activeDays
             )
         }

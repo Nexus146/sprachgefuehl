@@ -80,11 +80,11 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
     val progress = state.progress
     val profile = progress.profile
     val now = vm.repository?.now() ?: System.currentTimeMillis()
-    val today = now / Srs.DAY_MS
+    val today = vm.today()
     val minutesToday = progress.measuredMinutesOn(today)
     val goal = if (profile.dailyMinutes > 0) profile.dailyMinutes else 10
     val day = DailyPlan.summary(progress, today)
-    val step = NextPlanner.plan(content, progress, now)
+    val step = NextPlanner.plan(content, progress, now, today)
     val journey = JourneyPlanner.of(content, progress, step?.lessonId)
 
     val lesson = step?.lessonId?.let { id -> content.lessons.firstOrNull { it.id == id } }
@@ -100,21 +100,22 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
     val encounter = variant?.personaId?.takeIf { it.isNotBlank() }
         ?.let { id -> content.personas.firstOrNull { it.id == id } }
     val story = variant?.story?.takeIf { it.isNotBlank() } ?: situation?.story.orEmpty()
-    val stepIndex = lesson?.let { progress.lessonProgress[it.id] ?: 0 } ?: 0
-    // Dieselbe Mischung wie im Unterricht: sonst stünde hier „Schritt 4 von 15“, während die
-    // Lektion nur elf Schritte hat.
-    val sessionSize = remember(lesson?.id, progress.seed, progress.lessonRuns[lesson?.id]) {
+    val activeSession = progress.lessonSession?.takeIf { it.lessonId == lesson?.id }
+    val stepIndex = activeSession?.index ?: lesson?.let { progress.lessonProgress[it.id] ?: 0 } ?: 0
+    // Eine gespeicherte Sitzung kennt ihre echte Länge. Der Fallback für alte Daten erzeugt
+    // weiterhin dieselbe Mischung wie der Unterricht.
+    val sessionSize = activeSession?.steps?.size ?: remember(lesson?.id, progress.seed, progress.lessonRuns[lesson?.id]) {
         lesson?.let { LessonMixer.steps(it, content, progress, today).size } ?: 0
     }
     val afterNext = situation?.let { current -> PathProgress.nextInPath(content, progress, current.id) }
-    val due = progress.chunkMemory.count { Srs.isDue(it.value, now) }
+    val due = vm.dueCount()
     val gardenStage = Garden.stage(progress)
     val streak = Streak.of(progress, today)
     val canDoItems = content.canDo.filter { it.id in progress.canDo }.takeLast(2)
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greeting = Personalization.greeting(profile.greetingName, hour)
 
-    val reviewedDay = if (profile.reviewedDay > 0) profile.reviewedDay else profile.createdAt / Srs.DAY_MS
+    val reviewedDay = if (profile.reviewedDay > 0) profile.reviewedDay else vm.dayOf(profile.createdAt)
     val reviewDue = profile.createdAt > 0L && today - reviewedDay >= 21 &&
         (profile.reasons().isNotEmpty() || profile.interests.isNotEmpty())
 

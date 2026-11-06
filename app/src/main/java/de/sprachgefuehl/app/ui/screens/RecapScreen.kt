@@ -53,10 +53,10 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
     val content = state.content ?: return
     val progress = state.progress
     val now = vm.repository?.now() ?: System.currentTimeMillis()
-    val today = now / Srs.DAY_MS
+    val today = vm.today()
     val days = (0..6).map { offset -> today - 6 + offset }
     val week = progress.sessions.filter { it.day in days }
-    val overview = LearningOverview.of(content, progress, now)
+    val overview = LearningOverview.of(content, progress, now, today)
     val minutes = overview.week.minutes
     val speaking = overview.week.speakingTasks
     val newChunks = overview.week.newChunks
@@ -410,8 +410,7 @@ fun RecapScreen(vm: AppViewModel, state: AppUiState) {
 }
 
 private fun weekdayLabel(day: Long): String {
-    val calendar = Calendar.getInstance().apply { timeInMillis = day * Srs.DAY_MS }
-    return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+    return when (java.time.LocalDate.ofEpochDay(day).dayOfWeek.value) {
         Calendar.MONDAY -> "Mo"
         Calendar.TUESDAY -> "Di"
         Calendar.WEDNESDAY -> "Mi"
