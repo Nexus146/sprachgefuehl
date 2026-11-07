@@ -37,12 +37,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.BuildConfig
 import de.sprachgefuehl.app.Screen
 import de.sprachgefuehl.app.data.Backup
 import de.sprachgefuehl.app.data.BackupContent
+import de.sprachgefuehl.app.data.account.SyncPhase
 import de.sprachgefuehl.app.domain.LearningOverview
 import de.sprachgefuehl.app.domain.LessonMixer
 import de.sprachgefuehl.app.domain.SkillCatalog
@@ -61,6 +63,7 @@ import de.sprachgefuehl.app.ui.theme.Spacing
  */
 @Composable
 fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
+    val account by vm.account.collectAsStateWithLifecycle()
     val settings = state.progress.settings
     val overview = state.content?.let { content ->
         LearningOverview.of(
@@ -111,6 +114,30 @@ fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
             onBack = { vm.back() }
         )
         Column(modifier = Modifier.padding(horizontal = Spacing.l)) {
+
+            SoftCard(onClick = { vm.navigate(Screen.Account) }) {
+                Text("Konto und Cloud", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    when {
+                        !account.configured -> "Noch nicht eingerichtet · die App bleibt vollständig lokal"
+                        !account.signedIn -> account.localOwner?.let {
+                            "Nicht angemeldet · Fortschritt von $it bleibt auf diesem Gerät"
+                        } ?: "Nicht angemeldet · optional für Cloud-Sicherung"
+                        !account.emailVerified -> "E-Mail noch nicht bestätigt"
+                        account.phase == SyncPhase.SYNCED -> "Gesichert als ${account.email}"
+                        else -> "Angemeldet als ${account.email}"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Öffnen",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.height(Spacing.m))
 
             Text("Darstellung", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.s))
@@ -214,8 +241,8 @@ fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
             Text("Deine Daten", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.s))
             Text(
-                "Alles liegt auf diesem Gerät – es gibt keine Anmeldung und keine Übertragung. " +
-                    "Für ein neues Handy erstellst du hier eine Sicherungsdatei und lädst sie dort wieder.",
+                "Alles liegt auf diesem Gerät. Ein Konto ist optional und überträgt nur, was du " +
+                    "freigibst. Für ein neues Handy kannst du weiterhin eine Sicherungsdatei erstellen.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -360,7 +387,7 @@ fun SettingsScreen(vm: AppViewModel, state: AppUiState) {
             Text("Über", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(Spacing.s))
             Text(
-                "Sprachgefühl ${BuildConfig.VERSION_NAME} · offline nutzbar · keine Anmeldung · keine Werbung",
+                "Sprachgefühl ${BuildConfig.VERSION_NAME} · offline nutzbar · Konto optional · keine Werbung",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

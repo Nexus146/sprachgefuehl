@@ -16,7 +16,7 @@ import kotlin.math.abs
  */
 object Checkup {
 
-    const val BLOCK_SIZE = 6
+    const val BLOCK_SIZE = 5
 
     val order: List<Skill> = Skill.entries
 
@@ -73,7 +73,9 @@ object Checkup {
             answeredIds = answeredIds,
             results = results
         )
-        val settled = level >= 3 && answeredInBlock >= 4
+        // Wer oben angekommen ist, muss nicht mehr fünfmal antworten: drei sichere Antworten
+        // auf Stufe 3 genügen. Das hält den Start bei etwa 20 bis 25 Aufgaben.
+        val settled = level >= 3 && answeredInBlock >= 3
         val blockDone = answeredInBlock >= BLOCK_SIZE || settled || nextItem(moved, items) == null
         if (!blockDone) return moved
         val nextBlock = moved.blockIndex + 1

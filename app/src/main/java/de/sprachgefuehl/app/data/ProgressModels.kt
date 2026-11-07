@@ -135,8 +135,22 @@ data class Mistake(
     val day: Long = 0L,
     /** Skill-ID (hoeren, grammatik, …) – daraus wählt der Mixer das Wiederholungsformat. */
     val skill: String = "",
-    val cardId: String = ""
+    val cardId: String = "",
+    /** Das Muster des Satzes – daraus baut die nächste Lektion einen neuen Kontext. */
+    val patternId: String = ""
 )
+
+/**
+ * Wie oft ein Aufgabentyp saß. Aus diesen Zahlen kalibriert der Mixer seine Leiter: Ein Typ, der
+ * fast immer gelingt, wandert eine Stufe nach oben; einer, der oft scheitert, eine nach unten.
+ */
+@Serializable
+data class TaskStat(
+    val attempts: Int = 0,
+    val correct: Int = 0
+) {
+    val rate: Double get() = if (attempts == 0) 0.0 else correct.toDouble() / attempts
+}
 
 /**
  * The exact lesson round the learner is in. The generated steps are stored with it, so resuming
@@ -197,7 +211,9 @@ data class Progress(
     /** Gemessene Sekunden je Kalendertag (Epochentag). */
     val timeByDay: Map<Long, Int> = emptyMap(),
     /** Offene Fehler, die in späteren Lektionen zurückkommen – der jüngste zuerst. */
-    val mistakes: List<Mistake> = emptyList()
+    val mistakes: List<Mistake> = emptyList(),
+    /** Wie oft welcher Aufgabentyp saß – die Grundlage der Kalibrierung. */
+    val taskStats: Map<String, TaskStat> = emptyMap()
 ) {
     val totalSpeakingTasks: Int get() = sessions.sumOf { it.speakingTasks }
     val totalMinutes: Int get() = sessions.sumOf { it.minutes }

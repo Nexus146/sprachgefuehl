@@ -1,6 +1,7 @@
 package de.sprachgefuehl.app
 
 import android.app.Application
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.sprachgefuehl.app.data.CheckupItem
@@ -14,8 +15,10 @@ import de.sprachgefuehl.app.data.Profile
 import de.sprachgefuehl.app.data.ProgressStore
 import de.sprachgefuehl.app.data.Settings
 import de.sprachgefuehl.app.data.SituationVariant
+import de.sprachgefuehl.app.data.account.CloudAccountRepository
 import de.sprachgefuehl.app.domain.Checkup
 import de.sprachgefuehl.app.domain.FocusBlock
+import de.sprachgefuehl.app.domain.FocusRound
 import de.sprachgefuehl.app.domain.LessonSuggestion
 import de.sprachgefuehl.app.domain.Milestone
 import de.sprachgefuehl.app.domain.Personalization
@@ -59,6 +62,7 @@ sealed interface Screen {
     data object Checkup : Screen
     data object Preferences : Screen
     data object Guide : Screen
+    data object Account : Screen
     data object Onboarding : Screen
 }
 
@@ -67,6 +71,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val contentRepository = ContentRepository(application)
     private val store = ProgressStore(File(application.filesDir, "progress.json"))
     private var learning: LearningRepository? = null
+
+    // Accounts are optional. The repository is created even without Supabase values so the
+    // account screen can explain that setup is still missing.
+    private val cloudAccount = CloudAccountRepository(
+        application,
+        progressProvider = { learning?.progress?.value ?: store.load() },
+        importProgress = { progress -> learning?.importProgress(progress) ?: false },
+        // Abmelden räumt das Gerät ab: Danach steht der Erststart wieder am Anfang, und wer
+        // weiterlernen will, meldet sich an und holt seinen Stand aus der Cloud.
+        clearLocalProgress = {
+            learning?.reset()
+            _screen.value = Screen.Home
+            _tab.value = AppTab.START
+            backStack.clear()
+        }
+    )
+    val account = cloudAccount.state
 
     // The saved settings are read once, synchronously: otherwise the first frame would flash in
     // the light theme before the dark choice from the profile is known.
@@ -162,13 +183,40 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         openTab(AppTab.START)
     }
 
+    /**
+     * Der Abschluss des Onboardings in einem Schritt: Platzierung speichern und danach die
+     * Einstiegslektion öffnen, die zu diesem Stand passt. Zwei getrennte Aufrufe hätten die
+     * Lektion noch nach dem alten Stand gewählt.
+     */
+    fun beginAfterOnboarding(level: Int, score: Int, selfRating: Int) {
+        setPlacement(level, score, selfRating)
+        val next = learning?.let {
+            Personalization.suggestion(it.content, it.progress.value)?.lesson
+        } ?: return
+        navigate(Screen.Lesson(next.id))
+    }
+
     fun completeOnboarding() {
         learning?.completeOnboarding()
         openTab(AppTab.START)
     }
 
+    // Fokus-Runden leben im Speicher: Sie gehören zu einer Fehlerkarte, nicht zum Lernpfad.
+    private val _focusLessons = MutableStateFlow<Map<String, Lesson>>(emptyMap())
+
+    fun focusLesson(lessonId: String): Lesson? = _focusLessons.value[lessonId]
+
+    fun startFocusRound(cardId: String, day: Long): Lesson? {
+        val bundle = _state.value.content ?: return null
+        val card = bundle.errorCards.firstOrNull { it.id == cardId } ?: return null
+        val lesson = FocusRound.lesson(card, bundle, _state.value.progress, day)
+        _focusLessons.value = _focusLessons.value + (lesson.id to lesson)
+        return lesson
+    }
+
     /** Starts or resumes the one active lesson round. */
-    fun startLesson(lessonId: String): LessonSession? = learning?.startLesson(lessonId)
+    fun startLesson(lessonId: String): LessonSession? =
+        learning?.startLesson(lessonId, focusLesson(lessonId))
 
     fun today(): Long = learning?.today() ?: LocalDate.now().toEpochDay()
 
@@ -204,10 +252,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         trackMistake: Boolean,
         checkSkill: Skill?,
         checkCorrect: Boolean,
-        level: Int
+        level: Int,
+        taskType: String? = null
     ) = learning?.recordAnswer(
         chunkId, grade, usedHint, skills, cardId, lessonId, lessonTitle, target, heard,
-        mistakeSkill, trackMistake, checkSkill, checkCorrect, level
+        mistakeSkill, trackMistake, checkSkill, checkCorrect, level, taskType
     )
 
     fun recordError(cardId: String) = learning?.recordError(cardId)
@@ -299,6 +348,50 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun lesson(id: String): Lesson? = learning?.content?.lessons?.firstOrNull { it.id == id }
 
     fun lessonProgress(id: String): Int = _state.value.progress.lessonProgress[id] ?: 0
+
+    // ---- Optional cloud account ---------------------------------------------------------
+
+    fun handleAuthIntent(intent: Intent?) = cloudAccount.handleAuthIntent(intent)
+
+    fun registerAccount(email: String, password: String) = cloudAccount.register(email, password)
+
+    fun loginAccount(email: String, password: String) = cloudAccount.login(email, password)
+
+    fun logoutAccount() = cloudAccount.logout()
+
+    fun resendConfirmation() = cloudAccount.resendConfirmation()
+
+    fun sendPasswordReset(email: String? = null) = cloudAccount.sendPasswordReset(email)
+
+    fun updatePassword(password: String) = cloudAccount.updatePassword(password)
+
+    fun setCloudSyncEnabled(enabled: Boolean) = cloudAccount.setSyncEnabled(enabled)
+
+    fun syncCloudNow() = cloudAccount.syncNow()
+
+    fun resolveCloudConflict(useCloud: Boolean) = cloudAccount.resolveConflict(useCloud)
+
+    fun deleteAccount() = cloudAccount.deleteAccount()
+
+    // ---- Admin console -----------------------------------------------------------------
+
+    fun adminRefreshUsers() = cloudAccount.adminRefreshUsers()
+
+    fun adminCreateUser(email: String, password: String) = cloudAccount.adminCreateUser(email, password)
+
+    fun adminDeleteUser(userId: String) = cloudAccount.adminDeleteUser(userId)
+
+    fun adminSetPassword(userId: String, password: String) =
+        cloudAccount.adminSetPassword(userId, password)
+
+    fun adminSetEmail(userId: String, email: String) = cloudAccount.adminSetEmail(userId, email)
+
+    fun adminSetBanned(userId: String, banned: Boolean) =
+        cloudAccount.adminSetBanned(userId, banned)
+
+    fun adminResetProgress(userId: String) = cloudAccount.adminResetProgress(userId)
+
+    fun adminLoadDetail(userId: String) = cloudAccount.adminLoadDetail(userId)
 
     val repository: LearningRepository? get() = learning
 }

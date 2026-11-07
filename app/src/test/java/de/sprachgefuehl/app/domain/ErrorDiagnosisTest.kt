@@ -50,4 +50,9 @@ class ErrorDiagnosisTest {
     fun `empty input produces no diagnosis`() {
         assertEquals("", ErrorDiagnosis.diagnose("I have a headache.", ""))
     }
+
+    @Test
+    fun `a question said correctly is not a word order mistake`() {
+        assertEquals("", ErrorDiagnosis.diagnose("Should I take anything?", "Should I take anything?"))
+    }
 }

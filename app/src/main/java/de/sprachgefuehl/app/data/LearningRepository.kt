@@ -61,16 +61,21 @@ class LearningRepository(
      * returns the existing round; starting a different lesson replaces it.
      */
     @Synchronized
-    fun startLesson(lessonId: String): LessonSession? {
+    fun startLesson(lessonId: String, lessonOverride: Lesson? = null): LessonSession? {
         val current = _progress.value
         current.lessonSession?.let { existing ->
+            // Eine Runde aus einer älteren Inhaltsversion wird verworfen: Sonst liefen alte
+            // Schritte ohne Satzbezug weiter, und ein Hörfehler könnte nie zurückkommen.
             if (existing.lessonId == lessonId &&
                 existing.steps.isNotEmpty() &&
-                lessonId !in current.completedLessons
+                lessonId !in current.completedLessons &&
+                current.contentVersion == content.version
             ) return existing
         }
-        val lesson = content.lessons.firstOrNull { it.id == lessonId } ?: return null
-        val steps = LessonMixer.steps(lesson, content, current, today())
+        val lesson = lessonOverride ?: content.lessons.firstOrNull { it.id == lessonId } ?: return null
+        // A focus round brings its own concrete steps; mixing it would dissolve the card.
+        val steps = if (lessonOverride != null) lesson.steps
+        else LessonMixer.steps(lesson, content, current, today())
         if (steps.isEmpty()) return null
         // A finished lesson is a deliberate repeat: start the new round at its first task.
         val start = if (lessonId in current.completedLessons) 0
@@ -86,7 +91,8 @@ class LearningRepository(
         update { progress ->
             progress.copy(
                 lessonSession = session,
-                lessonProgress = progress.lessonProgress + (lesson.id to start)
+                lessonProgress = progress.lessonProgress + (lesson.id to start),
+                contentVersion = content.version
             )
         }
         return session
@@ -205,7 +211,14 @@ class LearningRepository(
     /** Accepts a validated backup document and replaces the current progress. */
     @Synchronized
     fun importProgress(text: String): Boolean {
-        val decoded = store.decode(text)?.let { index.migrate(it, content.version) } ?: return false
+        val decoded = store.decode(text) ?: return false
+        return importProgress(decoded)
+    }
+
+    /** Replaces the local document with a cloud or restored object. */
+    @Synchronized
+    fun importProgress(progress: Progress): Boolean {
+        val decoded = index.migrate(progress, content.version)
         _progress.value = decoded
         _saveFailed.value = !store.save(decoded)
         return true
@@ -270,12 +283,27 @@ class LearningRepository(
         trackMistake: Boolean,
         checkSkill: Skill?,
         checkCorrect: Boolean,
-        level: Int
+        level: Int,
+        taskType: String? = null
     ) = update { progress ->
         var next = progress
+        // Ein Aufgabentyp, der fast immer sitzt, wird später schwerer abgefragt; einer, der oft
+        // scheitert, leichter. Die Zahlen stammen aus jeder geprüften Aufgabe.
+        if (!taskType.isNullOrBlank()) {
+            val stat = next.taskStats[taskType] ?: TaskStat()
+            next = next.copy(
+                taskStats = next.taskStats + (taskType to stat.copy(
+                    attempts = stat.attempts + 1,
+                    correct = stat.correct + if (grade >= 2) 1 else 0
+                ))
+            )
+        }
         if (cardId.isNotBlank()) {
             next = next.copy(
-                errorCounts = next.errorCounts + (cardId to (next.errorCounts[cardId] ?: 0) + 1),
+                // Eine Karte gehört zur falschen Antwort – richtig gelöst zählt sie nicht als Fehler.
+                errorCounts = if (grade < 2) {
+                    next.errorCounts + (cardId to (next.errorCounts[cardId] ?: 0) + 1)
+                } else next.errorCounts,
                 skills = Skills.observe(next.skills, Skill.GRAMMATIK, 30, now())
             )
         }
@@ -298,7 +326,8 @@ class LearningRepository(
                         heard = heard.trim().take(120),
                         day = today(),
                         skill = mistakeSkill,
-                        cardId = cardId
+                        cardId = cardId,
+                        patternId = content.chunks.firstOrNull { it.id == chunkId }?.patternId.orEmpty()
                     )
                     next = next.copy(
                         mistakes = (next.mistakes.filterNot { it.chunkId == chunkId } + entry).takeLast(24)
@@ -355,7 +384,8 @@ class LearningRepository(
                 heard = heard.trim().take(120),
                 day = day,
                 skill = skill,
-                cardId = cardId
+                cardId = cardId,
+                patternId = content.chunks.firstOrNull { it.id == chunkId }?.patternId.orEmpty()
             )
             val list = (progress.mistakes.filterNot { it.chunkId == chunkId } + entry).takeLast(24)
             progress.copy(mistakes = list)

@@ -34,6 +34,8 @@ import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
 import de.sprachgefuehl.app.ui.components.AppTabBar
 import de.sprachgefuehl.app.ui.navigation.AppTab
+import de.sprachgefuehl.app.ui.screens.AccountScreen
+import de.sprachgefuehl.app.ui.screens.AdminScreen
 import de.sprachgefuehl.app.ui.screens.CheckupScreen
 import de.sprachgefuehl.app.ui.screens.CollectionScreen
 import de.sprachgefuehl.app.ui.screens.GuideScreen
@@ -58,12 +60,15 @@ import de.sprachgefuehl.app.ui.theme.Spacing
 fun AppRoot(vm: AppViewModel, state: AppUiState) {
     val screen by vm.screen.collectAsStateWithLifecycle()
     val tab by vm.tab.collectAsStateWithLifecycle()
+    val account by vm.account.collectAsStateWithLifecycle()
 
     // The bar belongs to the four roots. Inside a lesson or a detail page it disappears, so the
     // learner has one clear way forward instead of four tempting exits.
     // Während die App noch lädt, hat die Leiste nichts zu tun – ein Tipp darauf ins Leere wäre
     // nur verwirrend.
-    val showTabs = state.progress.onboarded && !state.loading && screen == tab.root
+    // Ein Admin-Konto führt in die Konsole, nicht in die Lern-App: keine Tab-Leiste, kein Weg in
+    // Lektionen. Das ist derselbe Login, aber ein anderer Ort.
+    val showTabs = state.progress.onboarded && !state.loading && !account.isAdmin && screen == tab.root
 
     BackHandler(enabled = state.progress.onboarded && (screen != tab.root || tab != AppTab.START)) {
         if (!vm.back() && tab != AppTab.START) vm.openTab(AppTab.START)
@@ -98,6 +103,7 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
                 when {
                     state.loading -> LoadingState()
                     state.error != null -> ErrorState(state.error ?: "")
+                    account.isAdmin -> AdminScreen(vm = vm, state = state, account = account)
                     !state.progress.onboarded -> OnboardingScreen(vm = vm, state = state)
                     else -> AnimatedContent(
                         targetState = screen,
@@ -126,6 +132,7 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
                             Screen.Preferences -> PreferencesScreen(vm, state)
                             Screen.Checkup -> CheckupScreen(vm, state)
                             Screen.Guide -> GuideScreen(vm)
+                            Screen.Account -> AccountScreen(vm, state)
                             Screen.Onboarding -> OnboardingScreen(vm, state)
                         }
                     }

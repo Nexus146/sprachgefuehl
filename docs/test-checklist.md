@@ -106,8 +106,23 @@ Vor dem Treffen: APK installieren, Handy auf laut, WLAN optional (die App brauch
 44. „Sicherung laden“ mit einer fremden Datei (z. B. einem Foto). Meldet die App, dass es keine
     Sicherung ist, und bleibt der Fortschritt unverändert?
 45. Nach dem Laden prüfen: Schriftgröße, Darstellung und Sprechtempo sind wie in der Sicherung.
-46. Ist die App ohne Internet-Berechtigung installiert? (Einstellungen → Apps → Sprachgefühl →
-    Berechtigungen: nur Mikrofon.)
+46. Zeigt die App unter Einstellungen → Apps → Sprachgefühl die Berechtigungen Mikrofon und
+    Internet? Bleibt das Lernen ohne Konto vollständig offline nutzbar?
+
+## Konto und Cloud (nur mit Supabase-Konfiguration)
+
+46a. Einstellungen → Konto und Cloud: Erscheint ohne `SUPABASE_URL`/`SUPABASE_ANON_KEY` der
+     Einrichtungshinweis, und bleibt die App lokal bedienbar?
+46b. Mit Konfiguration ein Konto erstellen: Kommt die Bestätigungsmail an? Ist die Anmeldung vor
+     der Bestätigung gesperrt und danach möglich?
+46c. Auf einem zweiten Gerät anmelden: Wird der Cloud-Stand geladen, und finden sich die
+     Aufnahmen wieder?
+46d. Auf beiden Geräten etwas ändern: Erscheint der Konflikt-Dialog, und führen beide Knöpfe zu
+     einem nachvollziehbaren Ergebnis?
+46e. Flugmodus: Bleibt die lokale Änderung erhalten, und versucht die App den Sync später
+     erneut?
+46f. Konto löschen: Sind Cloud-Fortschritt und Aufnahmen weg, während der lokale Fortschritt
+     bleibt?
 
 ## Abschluss
 

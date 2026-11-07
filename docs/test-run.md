@@ -61,7 +61,7 @@ nicht prüfbar vermerkt; alles andere lief gegen die echte App.
 
 **Darstellung und Berechtigungen**
 - Schriftgröße „Sehr groß“ und „Dunkel“: kein abgeschnittener Text, Auswahl bleibt nach Neustart.
-- Anträge der App: nur `RECORD_AUDIO`. Keine Internet-Berechtigung.
+- Anträge der App: `RECORD_AUDIO` und `INTERNET`. Ohne Konto wird die Netzwerk-Berechtigung nicht genutzt; die Konto-Seite zeigt ohne Supabase-Konfiguration den Einrichtungshinweis.
 - Mikrofon verweigern: Hinweis „Ohne Mikrofon kann ich nicht zuhören. Schätze selbst ein – das zählt
   genauso.“ plus Selbstcheck „Hat geklappt / Fast“, danach normale Rückmeldung und „Weiter“.
 
@@ -109,3 +109,157 @@ Verweigern-Test nicht erteilt. Die Sicherung `sprachgefuehl-sicherung (3).zip` i
 als Beispiel für Punkt 40/42 liegen. Der Lernstand (Ingrid, 21 Minuten, Lektion „Das Wetter
 als Nächste“) ist aus der geladenen Sicherung erhalten und wurde für die Nachprüfung des
 Polsters nur gelesen, nicht verändert.
+
+## Konto und Cloud (6. November 2026)
+
+Erster Durchlauf der Konto-Schicht gegen das **echte** Supabase-Projekt, nicht gegen einen Mock.
+Der Test liegt in `app/src/androidTest/java/de/sprachgefuehl/app/account/CloudAccountLiveTest.kt`
+und läuft mit `./gradlew :app:connectedDebugAndroidTest` auf dem Emulator.
+
+Ergebnis: `tests=1 failures=0 errors=0`, Laufzeit 7,2 s auf AVD `sg` (Android 14, API 34).
+Die geprüften Schritte in einem Durchlauf:
+
+1. **Registrierung** legt eine Sitzung an; die E-Mail gilt sofort als bestätigt.
+2. **Erste Sicherung** schreibt Revision 1. Direkt gegen PostgREST geprüft: `learning_states`
+   enthält `completedLessons`, `studySeconds` und die Aufnahme im Bucket `recordings`.
+3. **Zweites Gerät** (SharedPreferences geleert, lokale Datei gelöscht): der Sync lädt den
+   Cloud-Stand statt einen Konflikt zu fragen, und die Aufnahme kommt byte-genau zurück.
+4. **Konflikt**: ein zweiter Client erzwingt Revision 2, während das Gerät eigene Änderungen hat.
+   Der Sync erkennt den Konflikt und überschreibt nichts.
+5. **Konfliktlösung „Cloud-Stand laden“** ersetzt das lokale Dokument und endet im Zustand
+   `SYNCED`.
+6. **Konto löschen** ruft die Edge Function auf. Danach: `auth.users` = 0, `learning_states` = 0,
+   `storage.objects` (Bucket `recordings`) = 0, und die Anmeldung mit denselben Daten scheitert.
+
+Für den Lauf war „Confirm email" vorübergehend aus (Autoconfirm), weil es auf dem Emulator kein
+Postfach gibt; danach wurde es wieder eingeschaltet. Der Test hinterlässt kein Konto.
+
+Dabei gefunden und behoben: ein frisch installiertes Gerät hätte beim ersten Login einen
+Konflikt-Dialog statt des Cloud-Stands gezeigt. Ursache war die Auswertung „kein gespeicherter
+Hash ⇒ lokal geändert" auch für ein leeres Dokument. `SyncPlanner` lädt jetzt, solange lokal
+noch kein Onboarding-Stand existiert; zwei echte Stände bleiben ein Konflikt (`SyncPlannerTest`,
+zwei neue Fälle).
+
+Beim Sichtprüfen der Konto-Seite im Emulator fiel außerdem auf, dass „Passwort vergessen" neben
+„Neu hier? Konto erstellen" zu einem Buchstabenstapel gequetscht wurde („Pas / swo / rt …"). Die
+beiden Verweise stehen jetzt untereinander über die volle Breite; `screenshots/run/konto-2026-11-06.png`
+zeigt den Zustand danach.
+
+Der Emulator-Lauf hat den Startbildschirm, das Profil, die Einstellungen und die Konto-Seite
+gerendert – mit echter `SUPABASE_URL`/`SUPABASE_ANON_KEY`, also mit Anmeldeformular statt
+Einrichtungshinweis. Anmeldung, Sync und Löschung wurden dabei nicht per Tippen geprüft, sondern
+im automatisierten Test oben.
+
+## Abmelden (6. November 2026)
+
+Rückmeldung aus dem Test: Nach dem Abmelden sei man „immer noch im Account“, und unklar sei, was
+beim nächsten Anmelden übernommen wird.
+
+Rückmeldung danach: Der Fortschritt soll beim Abmelden **mit** verschwinden – wie in jeder App.
+Abmelden ist deshalb ein echter Kontowechsel, kein bloßes „Cloud aus“:
+
+1. Vor dem Abmelden sichert die App einmal, was lokal noch offen ist.
+2. Die Sitzung wird beendet, auch wenn der Server nicht antwortet (`clearSession()` als Rückfall).
+3. Der lokale Lernstand wird entfernt, samt Revision, Hash und Herkunft (`owner_uid`/
+   `owner_email`). Danach steht der Erststart wieder am Anfang.
+4. Beim nächsten Anmelden ist lokal nichts onboarded – der Cloud-Stand wird als Download geladen,
+   ohne Konfliktfrage. Ein Dialog vor dem Abmelden sagt beides an.
+
+Geprüft mit `SessionLogoutTest` gegen das echte Projekt (Zugangsdaten als
+Instrumentation-Argument, `tests=1 failures=0`):
+
+- Anmelden lädt den Cloud-Stand (`imports=1`, `localOwner` gesetzt).
+- Abmelden → `signedIn=false`, Adresse und Herkunft leer, lokaler Fortschritt leer, im
+  Gerätespeicher kein `revision_*`/`hash_*`/`owner_*`.
+- Nächster App-Start (neues Repository, neuer Supabase-Client): keine Sitzung vorhanden.
+- Erneut anmelden → Stand kommt zurück (`imports=2`), Sync endet in `SYNCED`.
+
+Der Emulator-Lauf zeigt den Zustand davor: Nach „Abmelden“ stand dort noch der Lernstand samt
+Name, die Konto-Seite sah aus wie vorher. Auf die neue Fassung übertragen heißt das: Der Erststart
+beginnt wieder bei der Begrüßung, und der Fortschritt kommt erst mit der Anmeldung zurück.
+
+## Erststart mit Konto (6. November 2026)
+
+Rückmeldung aus dem Test: „Ich habe schon ein Konto“, angemeldet, danach führte „Weiter“ zurück
+auf die Begrüßung – man landete im Kreis und konnte nicht erkennen, ob die Anmeldung gilt.
+
+Ursache: Im angemeldeten Zustand hing der Knopf an demselben Rückweg wie „Ohne Konto
+weitermachen“. Er heißt jetzt **„Weiter mit der Einrichtung“** und führt in den Namensschritt.
+Die Karte sagt außerdem, was Sache ist: „Angemeldet“, die Adresse, der Bestätigungsstatus und –
+wenn die Cloud für dieses Konto leer ist – „In der Cloud liegt für dieses Konto noch nichts.“
+
+Zwei Wege im Emulator durchgetippt (AVD `sg`, frische Installation):
+
+1. **Konto ohne Cloud-Stand** (`waltraud.kelch1@gmail.com`): Anmelden → „Angemeldet“, „E-Mail
+   bestätigt“, „In der Cloud liegt für dieses Konto noch nichts.“ → „Weiter mit der Einrichtung“
+   → „Wie dürfen wir dich nennen?“.
+2. **Konto mit Cloud-Stand** (`opboxnull@gmail.com`, per `SeedCloudAccountTest` gefüllt):
+   Anmelden → der Stand wird geladen und die App springt ohne Onboarding in den Startbildschirm:
+   „Guten Abend, Tobi“, 15 fällige Sätze, 7 von 110 Lektionen. Screenshot:
+   `screenshots/run/onboarding-cloud-geladen.png`.
+
+## Admin-Konsole (7. November 2026)
+
+Wunsch aus dem Test: ein Admin-Konto, das sich über dasselbe „Ich habe schon ein Konto“ anmeldet,
+aber **nicht** in der Lern-App landet, sondern in einem eigenen Bereich, in dem sich Konten
+anlegen und verwalten lassen.
+
+Gebaut: `public.admins` (RLS an, jeder sieht nur die eigene Zeile) entscheidet über den Zugang;
+die Edge Function `admin-users` prüft den Aufrufer dagegen und nutzt erst dann den Service-Role-Key
+für `list`, `create`, `set-password` und `delete`. Die App kennt keinen Service-Key. `AdminScreen`
+zeigt „Angemeldet“, „Neues Konto“ und „Konten (n)“ mit Adresse, Bestätigung, Lektionen, Minuten,
+Revision und letzter Sicherung; Löschen fragt nach. `AppRoot` führt ein Admin-Konto in diese
+Konsole, ohne Tab-Leiste – es gibt keinen Weg von dort in die Lektionen.
+
+Geprüft mit `AdminConsoleTest` gegen das echte Projekt (`tests=1 failures=0`, AVD `sg`):
+
+- Login mit dem Kurznamen `admin-11` (ohne `@`) → `admin-11@sprachgefuehl.local`, `isAdmin=true`.
+- `list` liefert die Konten samt Cloud-Stand; das bekannte Lernkonto erscheint mit Lektionen.
+- `create` legt ein Konto an, das sofort als bestätigt gilt (ohne Mail, solange kein SMTP da ist).
+- `delete` entfernt es wieder; `logout` räumt Sitzung, Admin-Status und Kontenliste ab.
+
+Der Test legt nur ein eigenes Wegwerf-Konto an und löscht es im Lauf wieder; bestehende Konten
+werden nicht verändert. Lauf:
+
+```
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=de.sprachgefuehl.app.account.AdminConsoleTest \
+  -Pandroid.testInstrumentationRunnerArguments.email=admin-11 \
+  -Pandroid.testInstrumentationRunnerArguments.password=…
+```
+
+Im Emulator zusätzlich getippt: „Ich habe schon ein Konto“ → `admin-11` und Passwort → die Konsole
+erscheint statt der Lern-App (`screenshots/run/admin-konsole.png`); die Liste zeigt drei Konten,
+darunter `opboxnull@gmail.com` mit „7 Lektionen · 63 Minuten · Revision 1“ und „Zuletzt gesichert“,
+während das eigene Konto „dieses Konto“ heißt und keinen Löschen-Knopf hat
+(`screenshots/run/admin-konsole-konten.png`).
+
+## Admin-Konsole, erweitert (7. November 2026)
+
+Rückmeldung: Die Konsole konnte nur auflisten, anlegen, Passwort setzen und löschen – „da muss noch
+mehr kommen“. Hinzugekommen sind:
+
+1. **Überblick** über allen Karten: Konten, mit Cloud-Stand, gesperrt, Lernminuten gesamt, aktiv in
+den letzten sieben Tagen. Am Gerät standen dort 4 Konten, 1 mit Cloud, 0 gesperrt, 63 Lernminuten
+und 4 aktiv (`screenshots/run/admin-konsole-neu.png`).
+2. **Einblick in ein Konto** („Ansehen“): Name, Tagesziel und Interessen aus dem Lernstand, dazu
+Lektionen, Minuten, Anzahl und Größe der Aufnahmen, Revision und letzte Sicherung. Für
+`opboxnull@gmail.com` am Gerät: „Name: Tobi“, „Tagesziel: 10 Minuten“, „Interessen: kochen“,
+„Lektionen: 7 · Minuten: 63“, „Revision 1“ (`screenshots/run/admin-konto-detail.png`).
+3. **Sperren und entsperren**: ein gesperrtes Konto kann sich nicht mehr anmelden, der Lernstand
+bleibt. Das eigene Admin-Konto lehnt der Server ab.
+4. **Fortschritt zurücksetzen**: Lernstand und Aufnahmen weg, Konto bleibt – für „nochmal von
+vorn“ am Telefon.
+5. **E-Mail-Adresse ändern**, sofort bestätigt.
+6. **Suchen und filtern** nach Adresse oder Name, „Alle / Mit Cloud / Gesperrt“.
+7. **Zugangsdaten teilen**: Adresse und Startpasswort über das Teilen-Fenster von Android.
+
+Die Serverfunktion `admin-users` liegt jetzt als `supabase/functions/admin-users/index.ts` im Repo
+(version 2, `verify_jwt` an) und kennt `list`, `detail`, `create`, `set-password`, `set-email`,
+`ban`, `unban`, `reset-progress` und `delete`.
+
+Geprüft mit `AdminConsoleTest` gegen das echte Projekt: `tests=1 failures=0`, 17,3 s. Der Lauf
+prüft nacheinander: Admin-Login mit Kurznamen, Liste, Konto anlegen, Passwort setzen, Einblick
+(leerer Stand), Adresse ändern, sperren → Anmeldung scheitert, entsperren → Anmeldung klappt,
+Fortschritt zurücksetzen, löschen. Bestehende Konten blieben unberührt; ein übrig gebliebenes
+Wegwerf-Konto aus einem früheren Lauf wurde anschließend in der Datenbank gelöscht.

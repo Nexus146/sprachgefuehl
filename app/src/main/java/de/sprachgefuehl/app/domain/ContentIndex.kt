@@ -23,8 +23,10 @@ data class ContentIndex(
      * and on import, so an old backup cannot make “collected 40” claim 40 known sentences.
      */
     fun migrate(progress: Progress, version: Int): Progress {
+        // Eine Runde aus einer älteren Inhaltsversion wird verworfen: Ihre Schritte kennen die
+        // neuen Felder nicht, und ein Hörfehler könnte sonst nie als Wiederholung zurückkommen.
         val session = progress.lessonSession?.takeIf {
-            it.lessonId in lessonIds && it.steps.isNotEmpty()
+            it.lessonId in lessonIds && it.steps.isNotEmpty() && progress.contentVersion == version
         }
         return progress.copy(
             contentVersion = version,

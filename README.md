@@ -1,6 +1,6 @@
 # Sprachgefühl
 
-Android-App für Erwachsene ab 60, die Englisch nicht nur erkennen, sondern **verstehen und selbst sprechen** wollen. Ruhig, offline nutzbar, ohne Zeitdruck, ohne Konto – der Fortschritt zieht per Sicherungsdatei auf ein neues Handy um.
+Android-App für Erwachsene ab 60, die Englisch nicht nur erkennen, sondern **verstehen und selbst sprechen** wollen. Ruhig, offline nutzbar, ohne Zeitdruck – ein Konto ist optional. Der Fortschritt zieht per Sicherungsdatei oder Cloud auf ein neues Handy um.
 
 Arbeitstitel: Sprachgefühl. UI-Sprache Deutsch, Lernsprache Englisch.
 
@@ -45,8 +45,9 @@ Dazu:
 - **Ruhiges Tagesende**: Ist das Ziel erreicht, sagt die App „Für heute reicht es“. An einem Pausentag wird nichts erwartet.
 - **Alle Zeilen anhören**: Dialoge laufen auf Wunsch am Stück – Hände frei.
 - **Einstellungen in drei Teilen**: Darstellung, Stimme, Daten – dazu der zugeklappte Bereich „Dein Lernweg“. Die Stimmwahl („Langsam / Normal / Zügig“) gilt für alle Modellsätze; in Üben, Lektion und Prüfung gibt es zusätzlich einen „Langsam“-Knopf. Alles Persönliche steht gebündelt unter „Deine Angaben“ im Profil.
-- **Kein Konto, kein Server**: Alles liegt auf dem Gerät. Für ein neues Handy erstellt man eine Sicherungsdatei (Fortschritt, Sätze und Aufnahmen) und lädt sie dort wieder ([docs/backup.md](docs/backup.md)).
-- **Vorher/Nachher**: eigene Aufnahmen bleiben lokal.
+- **Konto optional**: Ohne Anmeldung bleibt alles auf dem Gerät. Wer möchte, verbindet ein Supabase-Konto und sichert Fortschritt, Sätze und optional die Aufnahmen in der Cloud ([docs/accounts.md](docs/accounts.md)).
+- **Sicherungsdatei bleibt**: Für ein neues Handy kann man weiterhin eine Datei erstellen und dort wieder laden ([docs/backup.md](docs/backup.md)).
+- **Vorher/Nachher**: eigene Aufnahmen bleiben ohne Konto lokal.
 
 ## Wissenschaftliche Grundlage (kurz)
 
@@ -71,12 +72,13 @@ app/src/main/java/de/sprachgefuehl/app/
   MainActivity.kt              Einstieg, Theme, Motion
   AppViewModel.kt              App-Zustand, Navigation, Fortschritt
   data/                        Content-Modelle, Assets, Fortschritt (JSON), Sicherungsdatei
+  data/account/                optionale Supabase-Session, Konfliktlogik, Cloud-Sync, WorkManager
   domain/                      SRS, Scorer, Fehlerdiagnose, Session, Garten, Skills, Check-up
   speech/                      TTS, Spracherkennung, Aufnahme, Wiedergabe
   ui/navigation/               Die vier Tabs
   ui/                          Compose-Screens, Komponenten, Theme
 app/src/main/assets/content/content.json    generierte Inhalte
-app/src/test/                 217 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht, Streak und Lern-Engine
+app/src/test/                 276 JVM-Tests inkl. Content-Validator, Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht, Streak und Lern-Engine
 tools/                        Inhaltskatalog und Generator
 docs/                         Design, Prüfbogen, Test-Checkliste, Store-Vorbereitung
 ```
@@ -97,6 +99,10 @@ export PATH="$(pwd)/.toolchain/jdk17/bin:$PATH"
 
 Ergebnis: `app/build/outputs/apk/debug/app-debug.apk` (ca. 17 MB, Debug-Signatur).
 
+Für Konten zusätzlich `SUPABASE_URL` und `SUPABASE_ANON_KEY` in `local.properties` eintragen.
+Ohne diese Werte bleibt der Build lokal und die Konto-Seite zeigt einen Einrichtungshinweis
+([docs/accounts.md](docs/accounts.md)).
+
 Eine signierte Release-APK entsteht, sobald `keystore.properties` im Projektwurzelverzeichnis
 liegt: `./gradlew :app:assembleRelease`. Schritt für Schritt steht das in
 [docs/store.md](docs/store.md).
@@ -107,7 +113,7 @@ liegt: `./gradlew :app:assembleRelease`. Schritt für Schritt steht das in
 ./gradlew :app:testDebugUnitTest
 ```
 
-Geprüft werden: SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, der Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien) sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
+Geprüft werden: SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, der Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien), die Sync-Entscheidungen und Aufnahme-Pfade sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
 
 ## Inhalte bearbeiten
 
@@ -149,12 +155,15 @@ deutscher Prüfbogen mit allen Sätzen – zum Gegenlesen mit Muttersprachlern.
 
 ## Datenschutz
 
-Keine Werbung, keine Analytics, kein Konto. Fortschritt und Aufnahmen liegen im privaten
-App-Verzeichnis. Die App hat **keine Internet-Berechtigung** – sie kann nichts senden, auch nicht
-aus Versehen.
+Keine Werbung, keine Analytics. Ohne Konto verlassen Fortschritt und Aufnahmen das Gerät nicht.
+Die Internet-Berechtigung existiert nur für die optionale Anmeldung und Cloud-Sicherung; ohne
+Konto wird sie nicht genutzt. Mit Konto liegen die Daten in deinem Supabase-Projekt und sind
+über RLS ausschließlich deiner bestätigten E-Mail-Adresse zugeordnet.
 
-Wer das Gerät wechselt, erstellt in den Einstellungen eine Sicherungsdatei und lädt sie auf dem
-neuen Handy wieder. Was in der Datei liegt und wie der Umzug läuft: [docs/backup.md](docs/backup.md).
+Wer das Gerät wechselt, kann in den Einstellungen eine Sicherungsdatei erstellen und sie auf dem
+neuen Handy wieder laden. Was in der Datei liegt und wie der Umzug läuft:
+[docs/backup.md](docs/backup.md). Die optionale Cloud-Einrichtung steht in
+[docs/accounts.md](docs/accounts.md).
 
 ## Grenzen
 

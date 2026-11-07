@@ -13,17 +13,80 @@ object ErrorDiagnosis {
 
     private val dayNames = setOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
-    private val questionStarters = setOf("do", "does", "did", "where", "what", "when", "which", "who", "how", "is", "are", "can", "could")
+    private val questionStarters = setOf(
+        "do", "does", "did", "where", "what", "when", "which", "who", "how",
+        "is", "are", "was", "were", "am", "can", "could", "should", "would",
+        "will", "shall", "may", "might", "must", "have", "has", "had"
+    )
 
     fun diagnose(target: String, heard: String, fallbackPillar: String = ""): String {
         val t = Scorer.normalize(target)
         val h = Scorer.normalize(heard)
         if (h.isEmpty()) return ""
+        // Wer den Satz genau so sagt, wie er dasteht, hat keinen Fehler gemacht.
+        if (t == h) return ""
         val hs = h.toSet()
         val ts = t.toSet()
 
+        // Konkrete Formen zuerst. Jede Karte im Pool braucht hier eine Regel, sonst bleibt sie
+        // Theorie und taucht nie als Diagnose auf.
+        fun pair(x: String, y: String): Boolean = h.zipWithNext().any { (a, b) -> a == x && b == y }
+        fun near(x: String, y: String, maxGap: Int = 3): Boolean {
+            val start = h.indexOf(x)
+            if (start < 0) return false
+            return h.drop(start + 1).take(maxGap).contains(y)
+        }
+        val pastForms = setOf(
+            "went", "saw", "had", "took", "made", "got", "came", "said", "ate", "drank",
+            "wrote", "spoke", "bought", "thought", "found", "told"
+        )
+        val numberWords = setOf(
+            "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+            "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty", "sixty"
+        )
+        val timeMarkers = setOf("last", "yesterday", "ago")
+        val isDidnt = hs.contains("didn't") || hs.contains("didnt")
+
+        if (pair("am", "agree") || pair("is", "agree") || pair("are", "agree")) return "err_be_agree"
+        if ((hs.contains("have") || hs.contains("has")) && hs.contains("years") &&
+            (ts.contains("old") || numberWords.any { it in ts })
+        ) {
+            return "err_have_years"
+        }
+        if (hs.any { it in setOf("informations", "advices", "furnitures", "equipments", "moneys") }) {
+            return "err_uncountable"
+        }
+        if ((hs.contains("he") || hs.contains("she") || hs.contains("it")) &&
+            (hs.contains("don't") || hs.contains("dont"))
+        ) {
+            return "err_third_person_negation"
+        }
+        if (near("must", "to", 1)) return "err_must_to"
+        if (isDidnt && hs.any { it in pastForms }) {
+            return if (hs.contains("saw")) "err_didnt_see" else "err_didnt_past"
+        }
+        if (hs.contains("weekend") && (hs.contains("in") || pair("in", "the"))) return "err_prep_weekend"
+        if (near("how", "called", 3)) return "err_how_called"
+        if (near("want", "going", 2)) return "err_want_going"
+        if (hs.contains("people") && (hs.contains("is") || hs.contains("was"))) return "err_people_is"
+        if ((hs.contains("make") || hs.contains("made")) && hs.contains("party")) return "err_make_party"
+        if (hs.contains("say") && (pair("say", "me") || h.drop(1).take(2).contains("me"))) return "err_say_me"
+        if (hs.contains("boring") && !ts.contains("boring")) return "err_boring_bored"
+        if (pair("by", "foot")) return "err_by_foot"
+        if (hs.contains("evening") && h.contains("on")) return "err_in_evening"
+        if (hs.contains("been") && hs.any { it in timeMarkers }) return "err_been_last_year"
+        if (hs.contains("most") && h.any { it.length > 4 && it.endsWith("est") }) return "err_double_superlative"
+        if (hs.contains("discussed") && hs.contains("about")) return "err_discuss_about"
+        if (hs.contains("interested") && hs.contains("about")) return "err_interested_about"
+        if ((hs.contains("married") || hs.contains("marry")) && hs.contains("with")) return "err_marry_with"
+        if (hs.contains("very") && hs.contains("much") && hs.contains("it")) return "err_very_much_order"
+        if (hs.contains("how") && hs.contains("much") && near("much", "it", 2)) return "err_how_much_cost"
+
         val sinceIndex = h.indexOf("since")
         if (sinceIndex >= 0 && h.drop(sinceIndex + 1).any { it in durations }) return "err_since_for"
+        if (hs.contains("living") && hs.contains("since")) return "err_living_since"
+        if (hs.contains("since") && hs.none { it == "have" || it == "has" }) return "err_present_perfect_since"
 
         if ((t.firstOrNull() == "could" || t.firstOrNull() == "would") &&
             (h.firstOrNull() == "give" || (h.firstOrNull() == "i" && h.getOrNull(1) == "want"))
