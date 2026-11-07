@@ -104,4 +104,40 @@ class CheckupTest {
         assertEquals(5, Checkup.blockCount())
         assertNotNull(Checkup.nextItem(state, items))
     }
+
+    @Test
+    fun `a confident learner is asked about twenty tasks, not thirty`() {
+        var state = Checkup.start(0L, 2)
+        var asked = 0
+        while (!Checkup.isFinished(state) && asked < 40) {
+            val item = Checkup.nextItem(state, items) ?: break
+            state = Checkup.answer(state, item, true, items)
+            asked += 1
+        }
+        assertTrue("zu viele Aufgaben: $asked", asked in 20..25)
+        assertEquals(Skill.entries.size, state.blockIndex)
+    }
+
+    @Test
+    fun `a hesitant learner still finishes within twenty five tasks`() {
+        var state = Checkup.start(0L, 0)
+        var asked = 0
+        while (!Checkup.isFinished(state) && asked < 40) {
+            val item = Checkup.nextItem(state, items) ?: break
+            state = Checkup.answer(state, item, false, items)
+            asked += 1
+        }
+        assertEquals("zu viele Aufgaben: $asked", 25, asked)
+        assertEquals(Skill.entries.size, state.blockIndex)
+    }
+
+    @Test
+    fun `the new tasks keep every skill at three alternatives per level`() {
+        Skill.entries.forEach { skill ->
+            (0..2).forEach { level ->
+                val count = items.count { it.skill == skill.id && it.level == level }
+                assertTrue("$skill Stufe $level hat nur $count Aufgaben", count >= 3)
+            }
+        }
+    }
 }

@@ -1,7 +1,8 @@
 # Sicherung und Gerätewechsel
 
-Die App hat kein Konto und keinen Server. Wer das Handy wechselt, nimmt den Fortschritt als
-Datei mit: **Einstellungen → Deine Daten → Sicherung erstellen**.
+Die App funktioniert ohne Konto und ohne Server. Wer das Handy wechselt, nimmt den Fortschritt
+als Datei mit: **Einstellungen → Deine Daten → Sicherung erstellen**. Optional kann zusätzlich
+ein Konto für die Cloud-Sicherung verbunden werden ([accounts.md](accounts.md)).
 
 ## Was in der Datei liegt
 
@@ -32,15 +33,15 @@ wird ebenfalls geladen.
   nichts.
 - Eine fremde oder beschädigte Datei wird abgelehnt; der bisherige Fortschritt bleibt unverändert.
 - Die Datei ist **nicht verschlüsselt**. Sie gehört an einen Ort, den nur der Lernende kennt.
-- Zwei Geräte gleichzeitig aktuell halten geht nicht: Es gibt bewusst keinen Abgleich. Wer auf
-  beiden lernt, sichert vor dem Wechsel und lädt die neuere Datei.
+- Ohne Konto gibt es keinen automatischen Abgleich zwischen zwei Geräten. Wer auf beiden
+  lernt, sichert vor dem Wechsel und lädt die neuere Datei. Mit Konto übernimmt der optionale
+  Cloud-Sync diese Aufgabe (siehe [accounts.md](accounts.md)).
 
-## Warum kein Konto
+## Warum die Datei bleibt
 
-Ein Konto hätte eine E-Mail-Adresse, ein Passwort, eine Bestätigungsmail und einen fremden
-Server gebraucht – für eine App, die auf einem einzigen Gerät läuft, viel Aufwand und die erste
-Stelle, an der Daten das Haus verlassen. Die Sicherungsdatei kann der Lernende selbst sehen,
-kopieren und löschen. Die App hat deshalb auch keine Internet-Berechtigung.
+Die Sicherungsdatei ist der Weg, der ohne E-Mail, Passwort und fremden Server funktioniert. Sie
+kann der Lernende selbst sehen, kopieren und löschen. Ein Konto ist eine zusätzliche, freiwillige
+Bequemlichkeit – keine Voraussetzung. Ohne Konto wird die Internet-Berechtigung nicht genutzt.
 
 ## Neue Felder in `fortschritt.json`
 

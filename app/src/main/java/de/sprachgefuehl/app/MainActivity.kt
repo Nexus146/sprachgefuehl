@@ -1,11 +1,13 @@
 package de.sprachgefuehl.app
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,18 +17,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import de.sprachgefuehl.app.ui.AppRoot
 import de.sprachgefuehl.app.ui.theme.LocalMotion
 import de.sprachgefuehl.app.ui.theme.Motion
 import de.sprachgefuehl.app.ui.theme.SprachgefuehlTheme
 
 class MainActivity : ComponentActivity() {
+    private val vm: AppViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        vm.handleAuthIntent(intent)
         setContent {
-            val vm: AppViewModel = viewModel()
             val state by vm.state.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()
             val darkTheme = when (state.progress.settings.themeMode) {
@@ -50,6 +53,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        vm.handleAuthIntent(intent)
     }
 }
 

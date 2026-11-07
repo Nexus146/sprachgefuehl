@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
+import de.sprachgefuehl.app.domain.AdaptivePlan
 import de.sprachgefuehl.app.domain.DailyPlan
 import de.sprachgefuehl.app.domain.DayMood
 import de.sprachgefuehl.app.domain.Garden
@@ -272,6 +273,16 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // Warum die Aufgaben gerade so schwer sind – eine Zeile, kein Diagramm.
+                val adaptiveNote = AdaptivePlan.forProgress(progress, today).notes.values.firstOrNull()
+                if (adaptiveNote != null) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        adaptiveNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Spacer(Modifier.height(Spacing.s))
                 BigButton(
                     text = "Alle Bereiche",

@@ -138,6 +138,8 @@ data class Step(
     val originTitle: String = "",
     /** Warum diese Aufgabe gerade kommt – Onboarding, Schwäche oder Wiederholung. */
     val why: String = "",
+    /** Der ursprüngliche Fehler-Chunk, den ein richtig gelöster Transfer einlöst. */
+    val resolvesMistake: String = "",
     /** Bei eingestreuten Sätzen: was damals gesagt wurde und woher der Satz kommt. */
     val originNote: String = "",
     /** Beim Abruf bleibt das Modell verborgen, bis die Aufgabe gelöst ist. */

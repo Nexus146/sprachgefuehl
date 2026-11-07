@@ -160,8 +160,9 @@ https://github.com/DEIN_NAME/sprachgefuehl/releases/latest
 
 ### 5. Obtainium auf dem Handy einrichten
 
-Obtainium ist der Updater. Er braucht kein Konto, und Sprachgefühl selbst bleibt ohne
-Internet-Berechtigung – nur Obtainium hat Netz.
+Obtainium ist der Updater. Es braucht kein Konto. Sprachgefühl hat Internet nur für die optionale
+Anmeldung und Cloud-Sicherung; ohne Konto wird nichts übertragen. Obtainium braucht Netz für
+Updates.
 
 1. Obtainium installieren: [github.com/ImranR98/Obtainium/releases](https://github.com/ImranR98/Obtainium/releases),
    die Datei `Obtainium-….apk` herunterladen und installieren (gleiche Rückfragen wie unten).

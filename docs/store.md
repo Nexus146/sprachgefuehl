@@ -46,8 +46,8 @@ Vor dem Hochladen:
 - **Kurzbeschreibung (80 Zeichen):** Englisch verstehen und selbst sprechen – ruhig, offline, ohne Zeitdruck.
 - **Volltext (Auszug):** Jede Lektion beginnt mit einem Alltagsgespräch, erklärt eine Form auf
   Deutsch, übt Bausteine und lässt dich selbst sprechen. Bei Fehlern gibt es eine Erklärung in
-  sechs Teilen statt eines roten Kreuzes. Kein Konto, keine Werbung, keine Serien, keine
-  Internet-Berechtigung.
+  sechs Teilen statt eines roten Kreuzes. Ohne Konto, ohne Werbung, ohne Serien. Ein Konto ist
+  optional und nur für die Cloud-Sicherung nötig.
 - **Kategorie:** Lernen / Bildung
 - **Zielgruppe:** Erwachsene, besonders Menschen ab 60. Kein Kinderangebot, keine Inhalte für
   Kinder unter 13.
@@ -58,16 +58,17 @@ Vor dem Hochladen:
 
 | Frage | Antwort |
 |---|---|
-| Werden Daten erhoben oder geteilt? | Nein. Kein Konto, keine Übertragung, keine Weitergabe, keine Werbung. |
-| Werden Daten verschlüsselt übertragen? | Es werden keine Daten übertragen. Die Sicherungsdatei legt der Nutzer selbst ab. |
-| Können Nutzer die Löschung verlangen? | Ja, jederzeit selbst: Einstellungen → Fortschritt zurücksetzen löscht alle lokalen Daten, Deinstallation löscht sie mit. |
-| Wird das Mikrofon genutzt? | Ja, nur während einer Sprechaufgabe, nur on-device. Keine Aufnahmen werden gesendet. |
-| Aufnahmen | Bleiben im privaten App-Verzeichnis, optional in „Meine Sätze“. |
+| Werden Daten erhoben oder geteilt? | Ohne Konto: nein. Mit Konto: E-Mail, Fortschritt und optional Aufnahmen werden zum gewählten Supabase-Projekt übertragen, nicht an Dritte weitergegeben. Keine Werbung. |
+| Werden Daten verschlüsselt übertragen? | Ja, die optionale Cloud-Verbindung nutzt HTTPS/TLS. Die Sicherungsdatei legt der Nutzer selbst ab und ist nicht verschlüsselt. |
+| Können Nutzer die Löschung verlangen? | Ja: Einstellungen → Konto und Cloud → Konto löschen entfernt Cloud-Daten und Auth-Konto. Fortschritt zurücksetzen/Deinstallation löscht die lokalen Daten. |
+| Wird das Mikrofon genutzt? | Ja, nur während einer Sprechaufgabe, nur on-device. Aufnahmen werden nur bei aktivem Cloud-Sync übertragen. |
+| Aufnahmen | Bleiben ohne Konto im privaten App-Verzeichnis; mit Konto optional im privaten Storage-Bucket. |
 | Kinder | Kein Angebot für Kinder; Inhalte für Erwachsene. |
 
-Berechtigungen im Manifest: nur `RECORD_AUDIO`. Es gibt bewusst **keine** Netzwerk-Berechtigung –
-damit ist im Data-Safety-Formular „keine Datenübertragung“ belegbar. TTS und Spracherkennung laufen
-über die Systemdienste des Geräts.
+Berechtigungen im Manifest: `RECORD_AUDIO` und `INTERNET`. Die Netzwerk-Berechtigung wird nur für
+die freiwillige Anmeldung und Cloud-Sicherung verwendet; ohne Konto bleibt die App lokal. TTS und
+Spracherkennung laufen über die Systemdienste des Geräts. Im Data-Safety-Formular muss die
+optionale Konto-Nutzung deshalb als Datenübertragung angegeben werden.
 
 ## 4. Inhaltliche Prüfung vor dem Upload
 
@@ -77,7 +78,8 @@ damit ist im Data-Safety-Formular „keine Datenübertragung“ belegbar. TTS un
 
 ## 5. Was bewusst fehlt
 
-- Kein Konto und kein Server. Gerätewechsel läuft über eine Sicherungsdatei, die der Nutzer
-  selbst kopiert (Details: [backup.md](backup.md)).
+- Kein verpflichtendes Konto und kein eigener Server. Gerätewechsel läuft ohne Konto über eine
+  Sicherungsdatei (Details: [backup.md](backup.md)); optional über Supabase
+  ([accounts.md](accounts.md)).
 - Keine Analytics und keine Crash-Berichte. Fehler werden über die Test-Checkliste gefunden.
 - Kein Abo, keine Käufe.

@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
+import de.sprachgefuehl.app.Screen
+import de.sprachgefuehl.app.domain.FocusRound
 import de.sprachgefuehl.app.domain.SessionBuilder
 import de.sprachgefuehl.app.ui.components.DividerLine
 import de.sprachgefuehl.app.ui.components.ErrorCardContent
@@ -83,6 +86,15 @@ fun WorkshopScreen(vm: AppViewModel, state: AppUiState) {
                         if (open) {
                             Spacer(Modifier.height(Spacing.s))
                             ErrorCardContent(card) { speech.speak(card.correctEn) }
+                            TextButton(
+                                onClick = {
+                                    if (vm.startFocusRound(card.id, vm.today()) != null) {
+                                        vm.navigate(Screen.Lesson(FocusRound.lessonId(card.id)))
+                                    }
+                                }
+                            ) {
+                                Text("Diese Runde üben")
+                            }
                         }
                     }
                 }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,10 +51,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -116,7 +122,8 @@ private data class FeedbackState(
 @Composable
 fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val lesson = state.content?.lessons?.firstOrNull { it.id == lessonId }
+    // A focus round is built for one error card and lives outside the path content.
+    val lesson = state.content?.lessons?.firstOrNull { it.id == lessonId } ?: vm.focusLesson(lessonId)
     if (lesson == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Diese Lektion konnte nicht geladen werden.", style = MaterialTheme.typography.bodyLarge)
@@ -186,6 +193,29 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
     }
     DisposableEffect(lesson.id) { onDispose { reportTime() } }
     var stepDone by remember(step.id) { mutableStateOf(!stepNeedsAnswer(step)) }
+    val scrollState = rememberScrollState()
+    // Jeder Schritt beginnt oben – der Scrollstand des vorigen Schritts gehört nicht hierher.
+    LaunchedEffect(step.id) { scrollState.scrollTo(0) }
+    // Nach dem Lösen erscheint die Leiste und nimmt Platz weg. Statt ans Ende zu springen,
+    // rückt der Inhalt nur so weit nach, dass die Rückmeldung ganz im Bild ist – die eigene
+    // Antwort (bei Auswahlaufgaben die markierte Zeile) bleibt dabei so weit wie möglich stehen.
+    var viewportTop by remember { mutableFloatStateOf(0f) }
+    var viewportBottom by remember { mutableFloatStateOf(0f) }
+    var feedbackBottom by remember { mutableFloatStateOf(0f) }
+    var feedbackPlaced by remember(step.id) { mutableStateOf(false) }
+    // Eigene Antwort, die sichtbar bleiben soll (bei Wortbau der zusammengesetzte Satz).
+    var answerTop by remember(step.id) { mutableFloatStateOf(0f) }
+    var answerPlaced by remember(step.id) { mutableStateOf(false) }
+    LaunchedEffect(feedback, feedbackPlaced) {
+        if (feedback == null || !feedbackPlaced) return@LaunchedEffect
+        // Ein Frame warten: Leiste und Rückmeldung messen sich erst in diesem Durchgang.
+        withFrameNanos { }
+        val delta = revealDelta(feedbackBottom, viewportBottom, answerTop, viewportTop, answerPlaced)
+        if (delta > 1f) {
+            val target = (scrollState.value + delta.toInt()).coerceIn(0, scrollState.maxValue)
+            scrollState.animateScrollTo(target)
+        }
+    }
 
     fun advance() {
         if (!stepDone) return
@@ -221,7 +251,10 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
             )
             return
         }
-        val target = step.target.ifBlank { step.model }
+        // Verständnisfragen tragen ihren Satz jetzt selbst; ohne ihn gäbe es nichts zu wiederholen.
+        val target = step.target.ifBlank { step.model }.ifBlank {
+            content.chunks.firstOrNull { it.id == step.chunkId }?.en.orEmpty()
+        }
         val speaking = TaskRegistry.isSpeaking(step.type)
         val diagnosisId = if (outcome.heard.isNotBlank() && target.isNotBlank() && speaking) {
             ErrorDiagnosis.diagnose(target, outcome.heard, step.pillarId)
@@ -251,8 +284,13 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
             trackMistake = step.type != "SelfCheck",
             checkSkill = stepSkill,
             checkCorrect = outcome.grade >= 2,
-            level = level
+            level = level,
+            taskType = step.type
         )
+        // Ein richtig gelöster Transfer löst auch den ursprünglichen Fehler ein.
+        if (outcome.grade >= 2 && step.resolvesMistake.isNotBlank()) {
+            vm.resolveMistake(step.resolvesMistake)
+        }
         if (speaking && outcome.heard.isNotBlank() && outcome.spoken) spokenSteps += 1
         if (outcome.grade >= 2) {
             stepDone = true
@@ -318,7 +356,11 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .onGloballyPositioned {
+                        viewportTop = it.positionInRoot().y
+                        viewportBottom = viewportTop + it.size.height
+                    }
+                    .verticalScroll(scrollState)
                     .padding(horizontal = Spacing.l)
             ) {
                 Text(
@@ -382,45 +424,53 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
                         hintLevel = hintLevel,
                         onHint = { hintLevel = (hintLevel + 1).coerceAtMost(2) },
                         onOutcome = { handle(it) },
-                        onInfo = { advance() }
+                        onInfo = { advance() },
+                        onAnswerTop = {
+                            answerTop = it
+                            answerPlaced = true
+                        }
                     )
                 }
                 Spacer(Modifier.height(Spacing.l))
                 val currentFeedback = feedback
                 if (currentFeedback != null) {
-                    FeedbackPanel(
-                        tone = currentFeedback.tone,
-                        title = currentFeedback.title,
-                        detail = currentFeedback.detail,
-                        model = currentFeedback.model,
-                        onSpeakModel = { speech.speak(currentFeedback.model) },
-                        onSpeakSlow = { speech.speak(currentFeedback.model, rate = 0.6f) },
-                        errorCard = currentFeedback.card,
-                        onRetry = if (currentFeedback.tone != FeedbackTone.GOOD && attempts < 3) {
-                            {
-                                feedback = null
-                                hintLevel = 1
-                            }
-                        } else null
-                    )
+                    Box(
+                        modifier = Modifier.onGloballyPositioned {
+                            feedbackBottom = it.positionInRoot().y + it.size.height
+                            feedbackPlaced = true
+                        }
+                    ) {
+                        FeedbackPanel(
+                            tone = currentFeedback.tone,
+                            title = currentFeedback.title,
+                            detail = currentFeedback.detail,
+                            model = currentFeedback.model,
+                            onSpeakModel = { speech.speak(currentFeedback.model) },
+                            onSpeakSlow = { speech.speak(currentFeedback.model, rate = 0.6f) },
+                            errorCard = currentFeedback.card,
+                            onRetry = if (currentFeedback.tone != FeedbackTone.GOOD && attempts < 3) {
+                                {
+                                    feedback = null
+                                    hintLevel = 1
+                                }
+                            } else null
+                        )
+                    }
                 }
                 Spacer(Modifier.height(120.dp))
             }
-            Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
-                Column(modifier = Modifier.padding(Spacing.m)) {
-                    if (!stepDone) {
-                        Text(
-                            "Erst die Aufgabe lösen – dann geht es weiter.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = Spacing.xs)
+            // Solange die Aufgabe offen ist, wäre „Weiter“ ohnehin gesperrt – die Leiste nähme nur
+            // der Sprech- und Prüffläche den Platz weg und schnitte sie am unteren Rand ab.
+            // Sie erscheint deshalb erst, wenn es tatsächlich weitergeht.
+            if (stepDone) {
+                Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
+                    Column(modifier = Modifier.padding(Spacing.m)) {
+                        BigButton(
+                            text = if (index >= total - 1) "Lektion abschließen" else "Weiter",
+                            onClick = { advance() },
+                            enabled = stepDone
                         )
                     }
-                    BigButton(
-                        text = if (index >= total - 1) "Lektion abschließen" else "Weiter",
-                        onClick = { advance() },
-                        enabled = stepDone
-                    )
                 }
             }
         }
@@ -431,6 +481,22 @@ fun LessonScreen(vm: AppViewModel, lessonId: String, onExit: () -> Unit) {
 private fun skillForStep(type: String): Skill? = TaskRegistry.skillFor(type)
 
 private fun stepNeedsAnswer(step: Step): Boolean = TaskRegistry.needsAnswer(step.type)
+
+/**
+ * Wie weit der Inhalt nachrücken darf, damit die Rückmeldung ganz sichtbar wird, ohne die eigene
+ * Antwort aus dem Bild zu schieben (bei Wortbau der zusammengesetzte Satz).
+ */
+internal fun revealDelta(
+    feedbackBottom: Float,
+    viewportBottom: Float,
+    answerTop: Float,
+    viewportTop: Float,
+    answerPlaced: Boolean
+): Float {
+    val missing = feedbackBottom - viewportBottom
+    val allowed = if (answerPlaced) (answerTop - viewportTop).coerceAtLeast(0f) else Float.MAX_VALUE
+    return minOf(missing, allowed).coerceAtLeast(0f)
+}
 
 /** Ein Wort, das sagt, wo im Ablauf man gerade ist – vor dem Titel, nicht statt seiner. */
 private fun stepKind(step: Step): String = TaskRegistry.labelFor(step.type)
@@ -452,16 +518,17 @@ private fun StepBody(
     hintLevel: Int,
     onHint: () -> Unit,
     onOutcome: (Outcome) -> Unit,
-    onInfo: () -> Unit
+    onInfo: () -> Unit,
+    onAnswerTop: (Float) -> Unit
 ) {
     when (step.type) {
         "DialogInput" -> DialogBody(step, speech)
         "Noticing", "ChunkIntro" -> InfoBody(step, speech)
         "SelfCheck" -> SelfCheckBody(step, onOutcome)
-        "BuildSentence" -> BuildBody(step, enabled, onOutcome)
+        "BuildSentence" -> BuildBody(step, enabled, onOutcome, onAnswerTop)
         "Dictation" -> DictationBody(step, speech, enabled, onOutcome)
         "ComprehensionDeep" -> ComprehensionBody(step, speech, enabled, onOutcome)
-        "GrammarSpot", "ChooseConnector", "ConnectClauses", "UnderstandFastSpeech", "ListenNumber", "MinimalPair", "MeaningChoice", "ListenMeaning", "GapFill" ->
+        "GrammarSpot", "ChooseConnector", "ConnectClauses", "UnderstandFastSpeech", "ListenNumber", "MinimalPair", "MeaningChoice", "ListenMeaning", "GapFill", "OddOneOut", "CorrectTheSentence", "TrueFalse", "TranslateToGerman" ->
             ChoiceBody(step, speech, enabled, onOutcome)
         else -> SpeakBody(step, speech, enabled, hintLevel, onHint, onOutcome)
     }
@@ -723,14 +790,21 @@ private fun ComprehensionBody(
             val isSelected = selected == index
             val isAnswer = checked && index == question.answer
             Surface(
-                onClick = { if (!checked) selected = index },
-                enabled = enabled && !checked,
                 shape = RoundedCornerShape(Sizes.cornerSmall),
                 color = if (isSelected || isAnswer) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = Spacing.s)
+                    // Echte Auswahl statt bloßer Farbe: Rolle und Zustand landen so auch in der
+                    // Accessibility-Info, aus der Screenreader ihre Ansage bauen.
+                    .selectable(
+                        selected = isSelected,
+                        enabled = enabled && !checked,
+                        role = Role.RadioButton,
+                        // Erneuter Tipp auf die gewählte Zeile hebt die Auswahl wieder auf.
+                        onClick = { if (!checked) selected = if (selected == index) -1 else index }
+                    )
             ) {
                 Row(
                     modifier = Modifier.padding(Spacing.m),
@@ -840,13 +914,20 @@ private fun ChoiceBody(
         step.options.forEachIndexed { index, option ->
             val isSelected = selected == index
             Surface(
-                onClick = { if (!checked) selected = index },
-                enabled = enabled && !checked,
                 shape = RoundedCornerShape(Sizes.cornerSmall),
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = Spacing.s)
+                    // Echte Auswahl statt bloßer Farbe: Rolle und Zustand landen so auch in der
+                    // Accessibility-Info, aus der Screenreader ihre Ansage bauen.
+                    .selectable(
+                        selected = isSelected,
+                        enabled = enabled && !checked,
+                        role = Role.RadioButton,
+                        // Erneuter Tipp auf die gewählte Zeile hebt die Auswahl wieder auf.
+                        onClick = { if (!checked) selected = if (selected == index) -1 else index }
+                    )
             ) {
                 Text(
                     option.text,
@@ -889,8 +970,46 @@ private fun correctIndex(step: Step): Int {
     }.let { if (it >= 0) it else 0 }
 }
 
+/** Nur für instrumentierte Tests: die Verständnisaufgabe ohne den umgebenden Bildschirm. */
 @Composable
-private fun BuildBody(step: Step, enabled: Boolean, onOutcome: (Outcome) -> Unit) {
+internal fun ComprehensionStepForTest(
+    step: Step,
+    speech: SpeechController,
+    enabled: Boolean,
+    onSolved: () -> Unit
+) {
+    ComprehensionBody(step, speech, enabled, onOutcome = { onSolved() })
+}
+
+/** Nur für instrumentierte Tests: die Auswahlaufgabe ohne den umgebenden Bildschirm. */
+@Composable
+internal fun ChoiceStepForTest(
+    step: Step,
+    speech: SpeechController,
+    enabled: Boolean,
+    onSolved: () -> Unit
+) {
+    ChoiceBody(step, speech, enabled, onOutcome = { onSolved() })
+}
+
+/** Nur für instrumentierte Tests: die Wortbau-Aufgabe ohne den umgebenden Bildschirm. */
+@Composable
+internal fun BuildStepForTest(
+    step: Step,
+    enabled: Boolean,
+    onSolved: () -> Unit,
+    onAnswerTop: (Float) -> Unit
+) {
+    BuildBody(step, enabled, onOutcome = { onSolved() }, onAnswerTop = onAnswerTop)
+}
+
+@Composable
+private fun BuildBody(
+    step: Step,
+    enabled: Boolean,
+    onOutcome: (Outcome) -> Unit,
+    onAnswerTop: (Float) -> Unit
+) {
     val shuffled = remember(step.id) { step.words.shuffled(Random(step.id.hashCode())) }
     var chosen by remember(step.id) { mutableStateOf(listOf<Int>()) }
     Column {
@@ -901,7 +1020,9 @@ private fun BuildBody(step: Step, enabled: Boolean, onOutcome: (Outcome) -> Unit
         Surface(
             shape = RoundedCornerShape(Sizes.cornerSmall),
             color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { onAnswerTop(it.positionInRoot().y) }
         ) {
             Text(
                 if (chosen.isEmpty()) "Tippe unten auf die Wörter" else chosen.joinToString(" ") { shuffled[it] },

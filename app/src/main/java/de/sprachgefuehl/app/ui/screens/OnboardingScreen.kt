@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Spa
@@ -37,13 +38,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
 import de.sprachgefuehl.app.data.Backup
 import de.sprachgefuehl.app.data.BackupContent
+import de.sprachgefuehl.app.data.account.AccountUiState
+import de.sprachgefuehl.app.data.account.SyncPhase
 import de.sprachgefuehl.app.domain.Checkup
 import de.sprachgefuehl.app.domain.Personalization
 import de.sprachgefuehl.app.domain.ProfileCatalog
@@ -83,6 +89,13 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
     var minutes by rememberSaveable { mutableIntStateOf(profile.dailyMinutes) }
     var weekdays by rememberSaveable { mutableStateOf(profile.weekdays) }
     var selfRating by rememberSaveable { mutableIntStateOf(1) }
+    // Ein Konto ist auch hier erreichbar: Wer schon eines hat, soll nicht erst die ganze
+    // Standortbestimmung durchlaufen, bevor er seinen Fortschritt zurückholen kann.
+    val account by vm.account.collectAsStateWithLifecycle()
+    var showAccount by rememberSaveable { mutableStateOf(false) }
+    var registerMode by rememberSaveable { mutableStateOf(false) }
+    var accountEmail by rememberSaveable { mutableStateOf("") }
+    var accountPassword by rememberSaveable { mutableStateOf("") }
     // Auf einem neuen Handy ist die Sicherung der erste Schritt – nicht der letzte. Sonst müsste
     // sie erst die ganze Prüfung durchlaufen, bevor sie ihren Fortschritt zurückholen kann.
     val context = LocalContext.current
@@ -130,6 +143,36 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
 
         when (step) {
             STEP_WELCOME -> {
+                if (showAccount) {
+                    WelcomeAccount(
+                        account = account,
+                        registerMode = registerMode,
+                        email = accountEmail,
+                        password = accountPassword,
+                        onEmail = { accountEmail = it },
+                        onPassword = { accountPassword = it },
+                        onMode = {
+                            registerMode = !registerMode
+                            accountPassword = ""
+                        },
+                        onLogin = { vm.loginAccount(accountEmail, accountPassword) },
+                        onRegister = { vm.registerAccount(accountEmail, accountPassword) },
+                        onBack = {
+                            showAccount = false
+                            accountPassword = ""
+                        },
+                        // Angemeldet heißt: Es geht nach vorn in die Einrichtung, nicht zurück
+                        // zur Begrüßung. Sonst sähe der Login wie ein Kreislauf aus.
+                        onContinue = {
+                            showAccount = false
+                            accountPassword = ""
+                            step = STEP_NAME
+                        }
+                    )
+                    // Das Konto hat eine eigene Ansicht; der Begrüßungstext bleibt für den Weg
+                    // ohne Konto.
+                    return@Column
+                }
                 Text("Sprachgefühl", style = MaterialTheme.typography.displaySmall)
                 Spacer(Modifier.height(Spacing.s))
                 Text(
@@ -142,7 +185,7 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                     Bullet("10 Minuten am Tag reichen.")
                     Bullet("Du sprichst ab der ersten Lektion – mit Modellstimme und ruhigem Feedback.")
                     Bullet("Grammatik, Verbindungswörter und Aussprache greifen ineinander.")
-                    Bullet("Keine Anmeldung, keine Werbung. Alles bleibt auf diesem Gerät.")
+                    Bullet("Ohne Konto nutzbar, keine Werbung. Mit Konto liegt dein Fortschritt zusätzlich in der Cloud.")
                 }
                 Spacer(Modifier.height(Spacing.m))
                 Text(
@@ -154,10 +197,23 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                 BigButton("Los geht’s", { step = STEP_NAME })
                 Spacer(Modifier.height(Spacing.s))
                 BigButton(
-                    text = "Ich habe schon eine Sicherung",
-                    onClick = { backupLauncher.launch(arrayOf(Backup.MIME)) },
+                    text = "Ich habe schon ein Konto",
+                    onClick = { showAccount = true },
                     secondary = true
                 )
+                Spacer(Modifier.height(Spacing.xs))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        onClick = { backupLauncher.launch(arrayOf(Backup.MIME)) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Stattdessen eine Sicherungsdatei laden",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                }
                 if (backupMessage.isNotBlank()) {
                     Spacer(Modifier.height(Spacing.s))
                     Text(
@@ -416,19 +472,16 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
                 BigButton(
                     text = "Erste Runde starten",
                     onClick = {
-                        // Look the lesson up first: setPlacement flips `onboarded` and therefore
-                        // rebuilds the whole shell. Afterwards the placement is saved and only
-                        // the navigation is left, so one tap always ends in exactly one screen.
-                        val next = vm.nextLesson()
+                        // Erst das Profil, dann die Platzierung: Der Einstieg liest beides, um
+                        // die passende Lektion und den Wunschpfad zu wählen.
                         saveProfile()
-                        vm.setPlacement(vm.checkupLevel(), vm.checkupCorrectCount(), selfRating)
-                        if (next != null) vm.navigate(Screen.Lesson(next.id))
+                        vm.beginAfterOnboarding(vm.checkupLevel(), vm.checkupCorrectCount(), selfRating)
                     }
                 )
                 Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    "Später auf ein neues Handy? Der Fortschritt lässt sich in den Einstellungen als " +
-                        "Datei sichern und dort wieder laden.",
+                    "Später auf ein neues Handy? Mit einem Konto liegt dein Fortschritt in der Cloud. " +
+                        "Zusätzlich kannst du ihn in den Einstellungen als Datei sichern.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -467,6 +520,151 @@ fun OnboardingScreen(vm: AppViewModel, state: AppUiState) {
             }
         )
     }
+}
+
+@Composable
+private fun WelcomeAccount(
+    account: AccountUiState,
+    registerMode: Boolean,
+    email: String,
+    password: String,
+    onEmail: (String) -> Unit,
+    onPassword: (String) -> Unit,
+    onMode: () -> Unit,
+    onLogin: () -> Unit,
+    onRegister: () -> Unit,
+    onBack: () -> Unit,
+    onContinue: () -> Unit
+) {
+    Text("Dein Konto", style = MaterialTheme.typography.displaySmall)
+    Spacer(Modifier.height(Spacing.s))
+    Text(
+        "Damit kommt dein Fortschritt auf ein neues Handy. Ohne Konto bleibt alles auf diesem Gerät.",
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.primary
+    )
+    Spacer(Modifier.height(Spacing.l))
+
+    SoftCard {
+        if (account.signedIn) {
+            Text("Angemeldet", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(Spacing.xs))
+            Text(account.email.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                if (account.emailVerified) "E-Mail bestätigt" else "E-Mail noch nicht bestätigt",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (account.emailVerified) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+            )
+            Spacer(Modifier.height(Spacing.s))
+            Text(
+                "Liegt in der Cloud schon ein Fortschritt, wird er jetzt geladen – dann geht es " +
+                    "direkt in die App. Für ein neues Konto beginnt hier die kurze Einrichtung, " +
+                    "und alles wird ab dann automatisch gesichert.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (account.phase == SyncPhase.READY) {
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "In der Cloud liegt für dieses Konto noch nichts.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            Text(
+                if (registerMode) "Konto erstellen" else "Anmelden",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                if (registerMode) {
+                    "Du bekommst eine Bestätigungsmail. Erst danach wird die Cloud-Sicherung frei."
+                } else {
+                    "Mit deinem Konto kommt dein Fortschritt auf ein neues Gerät."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(Spacing.m))
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmail,
+                label = { Text("E-Mail") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(Spacing.s))
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPassword,
+                label = { Text("Passwort (mindestens 8 Zeichen)") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(Spacing.m))
+            BigButton(
+                text = if (registerMode) "Konto erstellen" else "Anmelden",
+                onClick = if (registerMode) onRegister else onLogin,
+                enabled = !account.busy
+            )
+            Spacer(Modifier.height(Spacing.s))
+            TextButton(onClick = onMode, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    if (registerMode) "Ich habe schon ein Konto" else "Neu hier? Konto erstellen",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
+            }
+            if (account.busy) {
+                Text(
+                    "Einen Moment …",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+
+    account.error?.let { message ->
+        Spacer(Modifier.height(Spacing.s))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+    account.message?.let { message ->
+        Spacer(Modifier.height(Spacing.s))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+
+    Spacer(Modifier.height(Spacing.xl))
+    if (account.signedIn) {
+        BigButton("Weiter mit der Einrichtung", onContinue)
+    } else {
+        BigButton("Ohne Konto weitermachen", onBack, secondary = true)
+    }
+    Spacer(Modifier.height(Spacing.m))
+    Text(
+        "Das Konto ist freiwillig. Alles Lernen funktioniert auch ohne, und du kannst dich " +
+            "später jederzeit in den Einstellungen anmelden.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable

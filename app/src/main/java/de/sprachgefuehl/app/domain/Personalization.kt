@@ -195,7 +195,13 @@ object Personalization {
         val preferred = if (paths.isEmpty()) null else remaining.firstOrNull { lesson ->
             content.situations.firstOrNull { it.id == lesson.situationId }?.pathId in paths
         }
-        val lesson = started ?: preferred ?: remaining.first()
+        // Der allererste Einstieg folgt dem gemessenen Niveau; danach bleibt der Pfad maßgeblich.
+        val entry = if (progress.onboarded && progress.completedLessons.isEmpty() &&
+            progress.lessonProgress.isEmpty()
+        ) {
+            EntryPoint.firstLesson(content, progress)
+        } else null
+        val lesson = entry ?: started ?: preferred ?: remaining.first()
         return LessonSuggestion(
             lesson = lesson,
             why = whyFor(progress.profile, lesson, content),

@@ -37,11 +37,11 @@ object TaskFormats {
      */
     fun skillFor(type: String): Skill? = when (type) {
         "SpeakRepeat", "TranslateToEnglish", "Recall", "SpeakFree", "TransferTask",
-        "Shadowing", "Paraphrase", "WhatsAppReply" -> Skill.SPRECHEN
-        "BuildSentence", "GapFill", "GrammarSpot" -> Skill.GRAMMATIK
-        "MeaningChoice", "SpeakFillSlot" -> Skill.BAUSTEINE
+        "Shadowing", "Paraphrase", "WhatsAppReply", "AnswerQuestion" -> Skill.SPRECHEN
+        "BuildSentence", "GapFill", "GrammarSpot", "CorrectTheSentence" -> Skill.GRAMMATIK
+        "MeaningChoice", "SpeakFillSlot", "OddOneOut", "TranslateToGerman" -> Skill.BAUSTEINE
         "ListenMeaning", "Dictation", "ComprehensionDeep", "UnderstandFastSpeech",
-        "ListenNumber", "MinimalPair" -> Skill.HOEREN
+        "ListenNumber", "MinimalPair", "TrueFalse" -> Skill.HOEREN
         "ChooseConnector", "ConnectClauses" -> Skill.VERKNUEPFEN
         else -> null
     }

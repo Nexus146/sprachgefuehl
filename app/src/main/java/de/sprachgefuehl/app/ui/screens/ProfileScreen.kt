@@ -227,8 +227,8 @@ fun ProfileScreen(vm: AppViewModel, state: AppUiState) {
             DividerLine()
             Spacer(Modifier.height(Spacing.m))
             Text(
-                "Alles hier bleibt auf diesem Gerät. Keine Anmeldung, keine Übertragung. " +
-                    "Sichern und Zurücksetzen findest du in den Einstellungen.",
+                "Alles hier bleibt auf diesem Gerät, solange du kein Konto verbindest. " +
+                    "Ein Konto ist optional; Sichern und Zurücksetzen findest du in den Einstellungen.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
