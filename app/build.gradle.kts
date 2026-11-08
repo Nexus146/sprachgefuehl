@@ -31,8 +31,8 @@ android {
         applicationId = "de.sprachgefuehl.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
         // The account layer has an on-device test that talks to the real project on the
         // emulator. It only runs through connectedDebugAndroidTest, never in a normal build.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
