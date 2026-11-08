@@ -1,6 +1,6 @@
 # Sprachgefühl
 
-Android-App für Erwachsene ab 60, die Englisch nicht nur erkennen, sondern **verstehen und selbst sprechen** wollen. Ruhig, offline nutzbar, ohne Zeitdruck – ein Konto ist optional. Der Fortschritt zieht per Sicherungsdatei oder Cloud auf ein neues Handy um.
+Android-App, die Englisch nicht nur erkennen, sondern **verstehen und selbst sprechen** wollen. Ruhig, offline nutzbar, ohne Zeitdruck – ein Konto ist optional. Der Fortschritt zieht per Sicherungsdatei oder Cloud auf ein neues Handy um.
 
 Arbeitstitel: Sprachgefühl. UI-Sprache Deutsch, Lernsprache Englisch.
 
