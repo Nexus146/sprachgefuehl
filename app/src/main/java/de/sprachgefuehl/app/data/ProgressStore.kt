@@ -9,6 +9,10 @@ import java.nio.file.StandardCopyOption
 /**
  * Progress lives in one small JSON document next to the app's private files. No account, no
  * server. Writes go to a temporary file first so a crash cannot leave a half-written state.
+ *
+ * Neben der Hauptdatei liegt die letzte gute Fassung als `.bak`. Wird die Hauptdatei einmal
+ * unlesbar, kommt der Fortschritt daraus zurück – und eine beschädigte Datei kann die gute
+ * Sicherung nie überschreiben.
  */
 class ProgressStore(private val file: File) {
 
@@ -17,10 +21,27 @@ class ProgressStore(private val file: File) {
         encodeDefaults = true
     }
 
+    private val backup = File(file.parentFile, file.name + ".bak")
+
+    /** Ob die Hauptdatei beim letzten Lesen verstanden wurde. */
+    private var mainReadable = true
+
     @Synchronized
-    fun load(): Progress = runCatching {
-        if (!file.exists()) Progress() else json.decodeFromString(Progress.serializer(), file.readText())
-    }.getOrElse { Progress() }
+    fun load(): Progress {
+        val fromMain = read(file)
+        if (fromMain != null) {
+            mainReadable = true
+            return fromMain
+        }
+        // Eine vorhandene, aber unlesbare Datei darf nie zur Sicherung werden.
+        if (file.exists() && file.length() > 0L) mainReadable = false
+        return read(backup) ?: Progress()
+    }
+
+    private fun read(source: File): Progress? = runCatching {
+        if (!source.exists() || source.length() == 0L) null
+        else json.decodeFromString(Progress.serializer(), source.readText())
+    }.getOrNull()
 
     /** Returns false when the write could not be completed. The caller must surface that. */
     @Synchronized
@@ -29,6 +50,9 @@ class ProgressStore(private val file: File) {
         file.parentFile?.mkdirs()
         val temp = File(file.parentFile, file.name + ".tmp")
         temp.writeText(text)
+        if (mainReadable && file.exists()) {
+            runCatching { file.copyTo(backup, overwrite = true) }
+        }
         runCatching {
             Files.move(
                 temp.toPath(), file.toPath(),
@@ -38,6 +62,7 @@ class ProgressStore(private val file: File) {
             file.writeText(text)
             temp.delete()
         }
+        mainReadable = true
         true
     }.getOrDefault(false)
 

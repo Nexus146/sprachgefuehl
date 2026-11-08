@@ -62,6 +62,7 @@ import de.sprachgefuehl.app.ui.navigation.LocalTabRoot
 import de.sprachgefuehl.app.ui.speech.SpeechController
 import de.sprachgefuehl.app.ui.speech.rememberSpeechController
 import de.sprachgefuehl.app.ui.theme.Spacing
+import de.sprachgefuehl.app.ui.components.TapSurface
 import kotlin.random.Random
 
 @Composable
@@ -526,9 +527,9 @@ private fun OrderBody(
         ) {
             words.forEachIndexed { wordIndex, word ->
                 val used = wordIndex in chosen
-                Surface(
+                TapSurface(
                     onClick = {
-                        if (checked) return@Surface
+                        if (checked) return@TapSurface
                         chosen = if (used) chosen else chosen + wordIndex
                     },
                     shape = RoundedCornerShape(14.dp),
@@ -645,7 +646,7 @@ private fun FreeBody(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Als Stütze:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(Spacing.s))
-                Surface(
+                TapSurface(
                     onClick = { speech.speak(model) },
                     shape = RoundedCornerShape(100),
                     color = MaterialTheme.colorScheme.surfaceVariant

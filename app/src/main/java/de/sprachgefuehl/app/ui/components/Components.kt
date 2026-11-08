@@ -2,14 +2,18 @@ package de.sprachgefuehl.app.ui.components
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -63,13 +67,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -84,6 +93,7 @@ import de.sprachgefuehl.app.ui.theme.Sizes
 import de.sprachgefuehl.app.ui.theme.Spacing
 import kotlin.math.PI
 import kotlin.math.sin
+import androidx.compose.ui.graphics.Shape
 
 fun appIcon(name: String): ImageVector = when (name) {
     "mic" -> Icons.Rounded.Mic
@@ -165,11 +175,21 @@ fun BigButton(
     secondary: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val haptics = LocalHapticFeedback.current
+    val motion = LocalMotion.current
     val shape = RoundedCornerShape(20.dp)
-    val background = when {
-        !enabled -> MaterialTheme.colorScheme.surfaceVariant
-        secondary -> MaterialTheme.colorScheme.surface
-        else -> MaterialTheme.colorScheme.primary
+    val filled = enabled && !secondary
+    val primary = MaterialTheme.colorScheme.primary
+    // Ein leichter Verlauf gibt dem Knopf Volumen; gedrückt fällt der Schatten weg, er sinkt ein.
+    val fill = when {
+        !enabled -> Brush.verticalGradient(
+            listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant)
+        )
+        secondary -> Brush.verticalGradient(
+            listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surface)
+        )
+        else -> Brush.verticalGradient(listOf(primary, lerp(primary, Color.Black, 0.16f)))
     }
     val contentColor = when {
         !enabled -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -177,36 +197,80 @@ fun BigButton(
         else -> MaterialTheme.colorScheme.onPrimary
     }
     Surface(
-        onClick = onClick,
+        onClick = {
+            if (!motion.reduced) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
         enabled = enabled,
         shape = shape,
-        color = background,
+        color = Color.Transparent,
+        border = if (secondary) BorderStroke(Sizes.border, MaterialTheme.colorScheme.outline) else null,
+        shadowElevation = if (filled && !pressed) 3.dp else 0.dp,
+        interactionSource = interaction,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = Sizes.button)
-            .then(
-                if (secondary) Modifier.border(Sizes.border, MaterialTheme.colorScheme.outline, shape)
-                else Modifier
-            ),
-        interactionSource = interaction
+            .pressScale(interaction)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.m),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (icon != null) {
-                Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(26.dp))
-                Spacer(Modifier.width(Spacing.s))
+        Box(modifier = Modifier.background(fill, shape)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(26.dp))
+                    Spacer(Modifier.width(Spacing.s))
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    textAlign = TextAlign.Center
+                )
             }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge,
-                color = contentColor,
-                textAlign = TextAlign.Center
-            )
         }
     }
+}
+
+/**
+ * Feine Kante für Flächen, die ihre Form selbst zeichnen – dieselbe Kante wie [SoftCard].
+ * Im dunklen Thema etwas kräftiger, weil ein Schatten dort kaum trägt.
+ */
+@Composable
+fun cardBorder(): BorderStroke = BorderStroke(
+    1.dp,
+    MaterialTheme.colorScheme.outline.copy(
+        alpha = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) 0.6f else 0.35f
+    )
+)
+
+/** Erhebung wie [SoftCard]: auf Papier deutlicher als im dunklen Thema. */
+@Composable
+fun cardElevation(): Dp = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) 1.dp else 2.dp
+
+/**
+ * Kleine Fläche zum Antippen – Pille, Chip oder Zeile. Sie senkt sich beim Drücken wie die
+ * großen Karten, bleibt aber flach, weil sie meist schon auf einer Karte liegt.
+ */
+@Composable
+fun TapSurface(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(100),
+    color: Color = MaterialTheme.colorScheme.surfaceVariant,
+    content: @Composable () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = color,
+        interactionSource = interaction,
+        modifier = modifier.pressScale(interaction)
+    ) { content() }
 }
 
 @Composable
@@ -216,18 +280,28 @@ fun SoftCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(Sizes.corner)
-    val base = modifier
-        .fillMaxWidth()
-        .border(Sizes.border, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), shape)
-        .then(
-            if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick)
-            else Modifier
-        )
+    val interaction = remember { MutableInteractionSource() }
+    // Papier auf Papier: eine feine Erhebung, die im dunklen Thema ruhiger ausfällt.
+    val elevation = cardElevation()
     Surface(
-        modifier = base,
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier
+                    .pressScale(interaction)
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = LocalIndication.current,
+                        role = Role.Button,
+                        onClick = onClick
+                    )
+                else Modifier
+            ),
         shape = shape,
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
+        tonalElevation = elevation,
+        shadowElevation = elevation,
+        border = cardBorder()
     ) {
         Column(modifier = Modifier.padding(Spacing.l), content = content)
     }
@@ -238,12 +312,22 @@ fun Tag(text: String, active: Boolean = false, onClick: (() -> Unit)? = null) {
     val shape = RoundedCornerShape(100)
     val bg = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
     val fg = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val interaction = remember { MutableInteractionSource() }
     Surface(
         shape = shape,
         color = bg,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) Modifier
+                    .pressScale(interaction)
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = LocalIndication.current,
+                        onClick = onClick
+                    )
+                else Modifier
+            )
     ) {
         Text(
             text = text,
@@ -260,6 +344,12 @@ fun ProgressChain(total: Int, current: Int, modifier: Modifier = Modifier) {
         // Bei großer Schrift passen fünfzehn Punkte nicht mehr neben die Schrittzahl; ein
         // schmaler Balken zeigt denselben Fortschritt und bleibt ruhig.
         val share = ((current + 1).toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
+        val motion = LocalMotion.current
+        val animated by animateFloatAsState(
+            targetValue = share,
+            animationSpec = tween(motion.base, easing = motion.easing),
+            label = "chain"
+        )
         Box(
             modifier = modifier
                 .height(10.dp)
@@ -267,7 +357,7 @@ fun ProgressChain(total: Int, current: Int, modifier: Modifier = Modifier) {
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(share)
+                    .fillMaxWidth(animated)
                     .height(10.dp)
                     .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(100))
             )
@@ -279,11 +369,17 @@ fun ProgressChain(total: Int, current: Int, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val motion = LocalMotion.current
         repeat(total) { index ->
             val active = index < current
+            val width by animateDpAsState(
+                targetValue = if (index == current) 22.dp else 10.dp,
+                animationSpec = tween(motion.fast, easing = motion.easing),
+                label = "dot"
+            )
             Box(
                 modifier = Modifier
-                    .size(width = if (index == current) 22.dp else 10.dp, height = 10.dp)
+                    .size(width = width, height = 10.dp)
                     .background(
                         color = if (active) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.surfaceVariant,

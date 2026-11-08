@@ -56,6 +56,7 @@ import de.sprachgefuehl.app.ui.components.SoftCard
 import de.sprachgefuehl.app.ui.components.StatRow
 import de.sprachgefuehl.app.ui.speech.rememberSpeechController
 import de.sprachgefuehl.app.ui.theme.Spacing
+import de.sprachgefuehl.app.ui.components.TapSurface
 
 /**
  * Deliberately small: everything that describes the learner lives in the profile. What is left
@@ -519,7 +520,7 @@ private fun CollapsibleInfo(
 @Composable
 private fun ChoiceButton(text: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-    androidx.compose.material3.Surface(
+    TapSurface(
         onClick = onClick,
         shape = shape,
         color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
