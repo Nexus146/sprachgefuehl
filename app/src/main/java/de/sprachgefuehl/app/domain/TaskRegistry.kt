@@ -43,6 +43,8 @@ object TaskRegistry {
         add(TaskSpec("OddOneOut", "Was passt nicht", Skill.BAUSTEINE, needsAnswer = true))
         add(TaskSpec("TranslateToGerman", "Zurückübersetzen", Skill.BAUSTEINE, needsAnswer = true))
         add(TaskSpec("TrueFalse", "Stimmt das", Skill.HOEREN, needsAnswer = true))
+        add(TaskSpec("WhichReply", "Passende Antwort", Skill.HOEREN, needsAnswer = true))
+        add(TaskSpec("FinishTheLine", "Satzende", Skill.BAUSTEINE, needsAnswer = true))
         add(TaskSpec("ConnectClauses", "Verbinden", Skill.VERKNUEPFEN, needsAnswer = true))
         add(TaskSpec("DialogInput", "Hören", null))
         add(TaskSpec("Noticing", "Die Form", null))

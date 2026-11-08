@@ -23,22 +23,29 @@ data class ContentIndex(
      * and on import, so an old backup cannot make “collected 40” claim 40 known sentences.
      */
     fun migrate(progress: Progress, version: Int): Progress {
-        // Eine Runde aus einer älteren Inhaltsversion wird verworfen: Ihre Schritte kennen die
-        // neuen Felder nicht, und ein Hörfehler könnte sonst nie als Wiederholung zurückkommen.
-        val session = progress.lessonSession?.takeIf {
-            it.lessonId in lessonIds && it.steps.isNotEmpty() && progress.contentVersion == version
-        }
+        // Eine angefangene Runde bleibt erhalten, solange ihre Lektion und die Sätze darin noch
+        // existieren. Früher fiel sie bei jeder Inhaltsänderung weg – wer mitten in einer Lektion
+        // war, stand nach dem Update wieder am Anfang. Die Schritte tragen ihren Text selbst,
+        // deshalb stört eine neue Inhaltsversion sie nicht.
+        val session = progress.lessonSession
+            ?.takeIf { it.lessonId in lessonIds && it.steps.isNotEmpty() }
+            ?.takeIf { it.steps.none { step -> step.chunkId.isNotBlank() && step.chunkId !in chunkIds } }
+            ?.let { it.copy(index = it.index.coerceIn(0, it.steps.lastIndex)) }
+        // Auch erzeugte Schritte einer offenen Runde tragen bereits Erledigtes.
+        val liveStepIds = stepIds + session?.steps?.map { it.id }.orEmpty()
         return progress.copy(
             contentVersion = version,
             completedLessons = progress.completedLessons.filterTo(mutableSetOf()) { it in lessonIds },
-            completedSteps = progress.completedSteps.filterTo(mutableSetOf()) { it in stepIds },
+            completedSteps = progress.completedSteps.filterTo(mutableSetOf()) { it in liveStepIds },
             lessonProgress = progress.lessonProgress.filterKeys { it in lessonIds },
             lessonRuns = progress.lessonRuns.filterKeys { it in lessonIds },
             chunkMemory = progress.chunkMemory.filterKeys { it in chunkIds },
             errorCounts = progress.errorCounts.filterKeys { it in errorCardIds },
             canDo = progress.canDo.filterTo(mutableSetOf()) { it in canDoIds },
-            mistakes = progress.mistakes.filter { it.chunkId in chunkIds },
+            // Ein Fehler ohne Satzbezug (Grammatik, Muster) bleibt – nur verschwundene Sätze gehen.
+            mistakes = progress.mistakes.filter { it.chunkId.isBlank() || it.chunkId in chunkIds },
             lessonSession = session,
+            lastPracticeChunkIds = progress.lastPracticeChunkIds.filter { it in chunkIds },
             variantIds = progress.variantIds.filterKeys { it in situationIds }
         )
     }

@@ -1,4 +1,4 @@
-# Test-Checkliste – erste Runde mit Oma
+# Test-Checkliste – erste Runde mit echten Lernenden
 
 Vor dem Treffen: APK installieren, Handy auf laut, WLAN optional (die App braucht es nicht).
 
@@ -16,7 +16,7 @@ Vor dem Treffen: APK installieren, Handy auf laut, WLAN optional (die App brauch
 
 ## Untere Leiste
 
-8. Auf der Startseite: Sind die vier Bereiche Start, Üben, Woche und Profil sichtbar?
+8. Auf der Startseite: Sind die vier Bereiche Start, Üben, Stand und Profil sichtbar?
 9. Jeden Bereich antippen. Bleibt die Auswahl markiert und der Inhalt passend?
 10. Eine Lektion öffnen. Verschwindet die Leiste? Kommt man mit dem X wieder zurück?
 11. In einer Lektion auf „Alle Zeilen anhören“ tippen. Kommen die Zeilen nacheinander?
@@ -180,7 +180,7 @@ Welche Punkte schon am Emulator durchgelaufen sind und was dabei gefunden wurde,
 67. Runde beenden: Steht „Noch eine Runde“, und lädt sie andere Sätze?
 68. Sprachprofil → „Standort neu bestimmen“ → bestätigen, eine Aufgabe beantworten, „Pause“.
     Erscheint auf der Startseite „Standort bestimmen … weiter bei Teil x von 5“?
-69. Woche: Stehen Tagesziel, Vorwoche (falls es eine gab) und „Noch x Runden bis …“ beim Garten?
+69. Stand: Stehen Tagesziel, Vorwoche (falls es eine gab) und „Noch x Runden bis …“ beim Garten?
     Erscheint „Was sich bewegt hat“ erst, wenn ein Bereich die Stufe gewechselt hat?
 70. Meine Sätze → Aufnahme: Steht ein Datum („12. Oktober“)? Löscht der Papierkorb die Aufnahme
     nach Rückfrage? Spielt „Alle Sätze anhören“ die gefilterte Liste und stoppt wieder?
@@ -193,7 +193,7 @@ Welche Punkte schon am Emulator durchgelaufen sind und was dabei gefunden wurde,
     hörbar langsamer als mit „Zügig“? Danach „Zügig“ wählen und denselben Satz hören.
 73. Wiederholen → „Satz zeigen“: Stehen „Anhören“ und „Langsam“ nebeneinander? Spricht „Langsam“
     gedehnt, und bietet die Rückmeldung danach „Langsam noch einmal“?
-74. Woche: Steht über den Tagesbalken „Deine Tage · Minuten“, ist der heutige Tag auch fett (nicht
+74. Stand: Steht über den Tagesbalken „Deine Tage · Minuten“, ist der heutige Tag auch fett (nicht
     nur farbig), stehen alle Balken auf einer Grundlinie, und nennt eine Runde ohne Sprechen
     „ohne Sprechen“ statt „0 Sätze gesprochen“?
 75. Profil und Startseite mit einer einzigen geübten Minute öffnen: Steht dort „1 Minute“ (nicht
@@ -203,7 +203,7 @@ Welche Punkte schon am Emulator durchgelaufen sind und was dabei gefunden wurde,
 
 76. Eine Aufgabe absichtlich falsch beantworten. Steht in der Rückmeldung höchstens ein Satz
     Beobachtung plus eine Handlung, und wiederholt der Text nicht den Knopf darunter?
-77. Stichprobe auf Start, Woche und Meine Sätze: Sind die Sätze kurz, und ist die Anrede
+77. Stichprobe auf Start, Stand und Meine Sätze: Sind die Sätze kurz, und ist die Anrede
     durchgehend „du“?
 
 ## Erkennung und Bewertung

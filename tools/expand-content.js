@@ -8,6 +8,9 @@ const file = path.join(__dirname, "..", "app", "src", "main", "assets", "content
 const d = JSON.parse(fs.readFileSync(file, "utf8"));
 const { paths, situations, lessons } = require("./new-lessons");
 const { errorCards, minimalPairs, checkup } = require("./new-extras");
+const { situations: situationsC, lessons: lessonsC } = require("./new-lessons-c");
+const allSituations = [...situations, ...situationsC];
+const allLessons = [...lessons, ...lessonsC];
 
 // Lektionen ohne Levelangabe folgen ihrer Position im Pfad: die erste Situation ist A1, die
 // zweite A1–A2, ab der dritten A2. Ohne diese Einordnung hätte der Einstieg nach dem
@@ -123,8 +126,8 @@ d.situations = d.situations.filter((s) => !obsoleteSituations.includes(s.id));
 const added = { paths: 0, situations: 0, lessons: 0, chunks: 0, patterns: 0, canDo: 0, errorCards: 0, minimalPairs: 0, checkup: 0 };
 
 for (const p of paths) { put(d.paths, p); added.paths++; }
-for (const s of situations) { put(d.situations, s); added.situations++; }
-for (const l of lessons) {
+for (const s of allSituations) { put(d.situations, s); added.situations++; }
+for (const l of allLessons) {
   put(d.lessons, {
     id: l.id,
     situationId: l.situationId,

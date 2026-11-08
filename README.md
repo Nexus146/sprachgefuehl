@@ -4,7 +4,7 @@ Android-App für alle, die Englisch nicht nur erkennen, sondern **verstehen und 
 
 Arbeitstitel: Sprachgefühl. UI-Sprache Deutsch, Lernsprache Englisch.
 
-Aktuelle Fassung: **1.5** (versionCode 6). Die signierte APK und das fertige Upload-Paket liegen unter [`github-vorbereitung/v1.5/`](github-vorbereitung/v1.5/).
+Aktuelle Fassung: **1.6** (versionCode 7). Die signierte APK und das fertige Upload-Paket liegen unter [`github-vorbereitung/v1.6/`](github-vorbereitung/v1.6/).
 
 ## Was die App macht
 
@@ -21,8 +21,8 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 - **Vier Bereiche unten**: Start, Üben, Stand, Profil. In einer Lektion verschwindet die Leiste, damit der Weg nach vorn der einzige bleibt.
 - **Profil beim ersten Start**: Name (freiwillig), Lerngrund, Interessen, Tagesziel und Lerntage entstehen im Onboarding – in zwei Schritten, jeder überspringbar. Später liegen alle Angaben zusammen unter **„Deine Angaben“** (oberste Karte im Profil), getrennt von der Statistik und den Einstellungen.
 - **Wo war ich?**: Die Startseite zeigt „Du warst hier stehen geblieben – bei Schritt 6 von 17“ samt der Zeit, die der nächste Schritt braucht, und führt mit einem Knopf zurück in die angefangene Lektion.
-- **Fünfzehn Kapitel**: Gesundheit, Leute & Small Talk, Einkaufen & Essen, Unterwegs, Alltag & Zuhause, Behörden & Termine, Feste & Einladen, Wenn’s hakt, Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn, Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe – dazu die Werkstatt. Insgesamt 51 Situationen mit 164 Lektionen, 3 bis 12 je Situation.
-- **Ein eigenes Viertel pro Lernendem**: Zu einer Situation gehören bis zu drei Erzählrahmen (insgesamt 104) – dieselben Bausteine, eine andere Geschichte. Ein gespeicherter Seed wählt aus, Interessen entscheiden bei Gleichstand: das Ziel bleibt gleich, die Geschichte nicht.
+- **Fünfzehn Kapitel**: Gesundheit, Leute & Small Talk, Einkaufen & Essen, Unterwegs, Alltag & Zuhause, Behörden & Termine, Feste & Einladen, Wenn’s hakt, Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn, Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe – dazu die Werkstatt. Insgesamt 52 Situationen mit 167 Lektionen, 3 bis 12 je Situation.
+- **Ein eigenes Viertel pro Lernendem**: Zu einer Situation gehören bis zu drei Erzählrahmen (insgesamt 107) – dieselben Bausteine, eine andere Geschichte. Ein gespeicherter Seed wählt aus, Interessen entscheiden bei Gleichstand: das Ziel bleibt gleich, die Geschichte nicht.
 - **Sichtbarer Fortschritt**: Jedes Kapitel zeigt „1 von 12 Lektionen in diesem Kapitel“, jede Situation ihren Zustand (Neu, Angefangen, Geschafft) und die nächste Lektion; die empfohlene Situation trägt „Als Nächstes“.
 - **Suche**: Sätze, Muster und Situationen auf Deutsch oder Englisch wiederfinden und direkt in der passenden Lektion üben.
 - **Tablet und große Handys**: Der Inhalt bleibt in einer ruhigen Spalte von höchstens 560 dp; die Tab-Leiste liegt über die volle Breite darunter, ihre Ziele stehen in derselben Spalte wie der Text.
@@ -31,7 +31,7 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 
 - **Üben mit Ansage**: Oben steht, was gerade ansteht („12 Sätze sind bald fällig“, „3 Sätze wackeln noch“) und welche der vier Übungsarten dazu passt; jede Karte nennt die Bereiche, die sie trainiert. Geübt wird zuerst, was fällig ist, dann Geschaffenes – nie ein Thema, das noch nicht dran war.
 - **Wiederholen auf zwei Wegen**: sprechen oder tippen, wenn es gerade laut ist. Am Ende „Noch eine Runde“, und eine angefangene Runde zählt auch beim Verlassen.
-- **Jede Runde anders – und passend**: Aus den 288 Bausteinen entstehen Runden mit 6 bis 15 Schritten (meist 13) und 11 bis 14 verschiedenen Schrittarten. Sechzehn Arten kommen vor: Baustein neu, Nachsprechen, Grammatikstelle, Noticing, Selbsteinschätzung, frei sprechen, Dialog hören, Hörverstehen vertiefen, Satz bauen, Verbindungswort wählen, Lücke sprechen, Übertragen, Sätze verbinden, Klangpaar, schnelles Sprechen, kurze Nachricht. Onboarding-Antworten gewichten die Bereiche, Fehler kommen in der nächsten Lektion mit dem Gehörten zurück, wackelige Sätze bekommen Stützen, sichere mehr Abruf.
+- **Jede Runde anders – und passend**: Aus den 294 Bausteinen entstehen Runden mit 6 bis 15 Schritten (meist 13) und 11 bis 14 verschiedenen Schrittarten. Achtzehn Arten kommen vor: Baustein neu, Nachsprechen, Grammatikstelle, Noticing, Selbsteinschätzung, frei sprechen, Dialog hören, Hörverstehen vertiefen, Satz bauen, Verbindungswort wählen, Lücke sprechen, Übertragen, Sätze verbinden, Klangpaar, schnelles Sprechen, kurze Nachricht, auf die Zeile des Gegenübers antworten, Satzende wählen. Onboarding-Antworten gewichten die Bereiche, Fehler kommen in der nächsten Lektion mit dem Gehörten zurück, wackelige Sätze bekommen Stützen, sichere mehr Abruf.
 - **Im Unterricht** steht unter dem Titel „Übt: …“, die Begründung heißt „Warum diese Aufgabe?“; am Ende siehst du, wie viele Bausteine deine Sammlung hat und wie viele Sätze zurückkommen.
 - **Standortbestimmung beim Start**: Prüfaufgaben je Bereich mit adaptiver Treppe (zwei richtige Aufgaben heben die Stufe, eine falsche senkt sie) – rund 12–15 Minuten aus 85 Aufgaben, pausierbar, ohne Noten. Wer nicht prüfen mag, startet vorsichtig nach Selbsteinschätzung.
 - **Standortbestimmung mit Pause**: jederzeit unterbrechbar; die Startseite bietet danach „weiter bei Teil 3 von 5“, das Sprachprofil ein „Standort neu bestimmen“.
@@ -42,7 +42,7 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 - **Stand in Worten**: Der Tab „Stand“ stellt den Sprachgarten in den Mittelpunkt – groß, mit Gartenstufe und dem nächsten Wachstumsschritt –, darunter die letzte Woche, offene Fehler, Vorwoche und Tagesziel. Pool und die fünf Bereiche stehen nur noch zugeklappt unter „Dein Lernweg“ in den Einstellungen. Die Minuten stammen aus der gemessenen Lernzeit.
 - **Sprachprofil statt einer Stufe**: fünf Bereiche (Hören, Grammatik, Bausteine, Sprechen, Verknüpfen) mit vier Stufen, fortgeschrieben aus jeder echten Aufgabe.
 - **Werkstatt**: 12 Grammatik-Säulen, 5 Stufen Verbindungswörter, Strategien (nachfragen, umschreiben, Zeit gewinnen), Klangpaare, schnelles Sprechen, kurze Nachrichten – als 20 feste Lektionen, in denen die Grammatik für sich steht.
-- **Sprachkarte**: 208 Muster mit ihren Bausteinen und Verwandtschaften; wächst mit dem Lernstand.
+- **Sprachkarte**: 211 Muster mit ihren Bausteinen und Verwandtschaften; wächst mit dem Lernstand.
 - **Fehler-Werkstatt**: persönliches Fehlerprofil aus 49 Fehlerkarten und eine Wiederholungsqueue.
 - **Klangpaare**: 32 Minimalpaare für die Laute, die im Deutschen zusammenfallen.
 - **Sprachgarten**: wächst mit jeder Runde, verwelkt nie, keine Rangliste – er steht im Tab „Stand“ als große Fläche und lässt sich in voller Größe ansehen.
@@ -67,17 +67,17 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 | Was | Wie viel |
 |---|---|
 | Kapitel | 15 (14 Alltagskapitel + Werkstatt) |
-| Situationen | 51 |
-| Lektionen | 164 (144 gemischt, 20 Werkstatt) |
-| Erzählrahmen | 104, bis zu drei je Situation |
-| Bausteine | 288 |
-| Muster | 208 |
-| Kann-Sätze | 164 |
+| Situationen | 52 |
+| Lektionen | 167 (147 gemischt, 20 Werkstatt) |
+| Erzählrahmen | 107, bis zu drei je Situation |
+| Bausteine | 294 |
+| Muster | 211 |
+| Kann-Sätze | 167 |
 | Fehlerkarten | 49 |
 | Minimalpaare | 32 |
 | Prüfaufgaben der Standortbestimmung | 85 |
 | Personen im Viertel | 7 |
-| JVM-Tests | 306 in 45 Klassen |
+| JVM-Tests | 316 in 46 Klassen |
 
 ## Wissenschaftliche Grundlage (kurz)
 
@@ -112,9 +112,9 @@ app/src/main/java/de/sprachgefuehl/app/
   ui/screens/                  Start, Üben, Stand, Profil, Lektion, Prüfung, Werkstatt, Suche …
   ui/                          Compose-Theme, Farben, Typografie
 app/src/main/assets/content/content.json    generierte Inhalte
-app/src/test/                 306 JVM-Tests in 45 Klassen, inkl. Content-Validator, TaskAudit,
+app/src/test/                 316 JVM-Tests in 46 Klassen, inkl. Content-Validator, TaskAudit,
                               Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht,
-                              Streak und Lern-Engine
+                              Streak, Lern-Engine und dem Wächter für alte Speicherstände
 tools/                        Inhaltskatalog und Generator
 docs/                         Design, Prüfbogen, Test-Checkliste, Store-Vorbereitung, Verteilen
 github-vorbereitung/          fertige Release-Pakete (APK, ZIP, Notizen, Prüfsummen)
@@ -148,9 +148,15 @@ liegt: `./gradlew :app:assembleRelease`. Schritt für Schritt steht das in
 
 ## Version und Veröffentlichung
 
-- **1.5** (versionCode 6) ist die aktuelle Fassung: signierte APK (ca. 15 MB), Upload-ZIP für GitHub, Release-Notizen, Anleitung und Prüfsummen liegen in [`github-vorbereitung/v1.5/`](github-vorbereitung/v1.5/).
-- Der Prüfsummenstand steht in `github-vorbereitung/v1.5/SHA256SUMS_v1.5.txt`, die Reihenfolge der Schritte in `github-vorbereitung/v1.5/ANLEITUNG-GITHUB.md`.
+- **1.6** (versionCode 7) ist die aktuelle Fassung: zwei neue Aufgabenformen (Antwort auf eine Gehörte Zeile, Satzende wählen), die Situation „Beim Friseur" und mehr Abwechslung in kurzen Runden. Signierte APK (ca. 15 MB), Upload-ZIP für GitHub, Release-Notizen, Anleitung und Prüfsummen liegen in [`github-vorbereitung/v1.6/`](github-vorbereitung/v1.6/).
+- **1.5** (versionCode 6) brachte Tiefe in der Oberfläche: Kanten und Erhebung, ein antwortender Hauptknopf, Garten in Beeten, lesbare Spalte auf dem Tablet.
+- Der Prüfsummenstand steht in `github-vorbereitung/v1.6/SHA256SUMS_v1.6.txt`, die Reihenfolge der Schritte in `github-vorbereitung/v1.6/ANLEITUNG-GITHUB.md`.
 - Ältere Zwischenpakete werden nicht aufgehoben; `github-vorbereitung/README.md` nennt die jeweils gültige Fassung.
+- Für eine erste Runde mit echten Lernenden: [docs/testleitfaden.md](docs/testleitfaden.md).
+
+## Updates und alter Speicherstand
+
+Jedes Update – neue Lektionen, größerer Aufgabenpool, neue Einstellung – muss mit dem vorhandenen Fortschritt zusammenpassen. Die Regeln und der Test, der sie erzwingt, stehen in [docs/kompatibilitaet.md](docs/kompatibilitaet.md): alte Dateien laden mit Defaults, verschwundene Inhalte werden beim Laden aussortiert, eine angefangene Lektion bleibt erhalten, solange ihre Sätze existieren, und neuer Inhalt gilt als neu statt als geschafft.
 
 ## Tests
 
@@ -158,7 +164,9 @@ liegt: `./gradlew :app:assembleRelease`. Schritt für Schritt steht das in
 ./gradlew :app:testDebugUnitTest
 ```
 
-306 Tests in 45 Klassen prüfen: SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, den Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien), die Sync-Entscheidungen und Aufnahme-Pfade sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
+316 Tests in 46 Klassen prüfen: SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, den Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien), die Sync-Entscheidungen und Aufnahme-Pfade sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
+
+`ProgressUpgradeTest` ist der Wächter für Updates (siehe [docs/kompatibilitaet.md](docs/kompatibilitaet.md)): kein gespeichertes Feld ohne Default, alte Dateien laden, verschwundene Inhalte werden aussortiert, eine angefangene Lektion bleibt, und die adaptiven Teile rechnen auf einem alten Stand weiter.
 
 Dazu kommt `TaskAuditTest`: Er prüft die 1.900 von Hand geschriebenen Schritte und 432 generierten Runden darauf, dass jede Aufgabe lösbar ist, eine eindeutige Lösung hat und die Runde abwechslungsreich bleibt. Wo der Katalog keine Lösung mitliefert (Verbinden, Klangpaar, schnelles Sprechen), leitet `AnswerKey` sie mit ausdrücklichen Regeln ab – ist keine eindeutig, gilt nichts als falsch.
 
@@ -175,6 +183,9 @@ tools/situations2.mjs     Unterwegs, Alltag, Wenn’s hakt
 tools/situations5.mjs     Behörden und Feste
 tools/situations3.mjs     Restaurant und weitere Gelegenheiten (Staffel 2)
 tools/situations4.mjs     Post und weitere Gelegenheiten (Staffel 2)
+tools/expand-content.js  Trägt Zusatz-Situationen in content.json ein (idempotent)
+tools/new-lessons.js     Arbeit, Reisen, Wohnen – Lektionen für den Nachtrag
+tools/new-lessons-c.js   Beim Friseur: Termin, Wunsch, Bezahlen
 tools/new-lessons.js      Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn
 tools/new-lessons-b.js    Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe
 tools/new-extras.js       Fehlerkarten, Minimalpaare, Standort-Aufgaben

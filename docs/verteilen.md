@@ -127,7 +127,7 @@ Dann auf github.com ein neues Repository anlegen:
 
 - Name z. B. `sprachgefuehl`
 - Sichtbarkeit **Public** – Anhänge eines privaten Repos sind nur nach Anmeldung
-  herunterladbar, und genau das soll deine Oma nicht brauchen
+  herunterladbar, und genau das soll niemand können müssen
 - **ohne** README, ohne .gitignore, ohne Lizenz (das Repo ist leer)
 
 ```bash

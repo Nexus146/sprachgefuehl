@@ -81,6 +81,7 @@ object LessonMixer {
             }
         }
 
+
         connectorStep(lesson, content, random, learner)?.let { result += it }
         // Fehler aus früheren Lektionen haben Vorrang: Sie schließen die Lücke von zuletzt.
         // Ab zwei offenen Fehlern kommen beide zurück – der Fehler ist Pflichtteil der Runde.
@@ -108,13 +109,104 @@ object LessonMixer {
         var extra = 0
         while (base.size < MIN_TASKS && chunks.isNotEmpty() && extra < 32) {
             val chunk = chunks[extra % chunks.size]
-            val type = if (extra % 2 == 0) "MeaningChoice" else "SpeakRepeat"
+            val type = FILLERS[extra % FILLERS.size]
             base += task(type, chunk, lesson, content, random, 200 + extra, learner)
             extra += 1
         }
         return addUnderstandingGate(base.distinctBy { it.id }, content, random)
     }
 
+    /** Füllaufgaben für kurze Autorenkerne – rotierend, damit nicht immer dasselbe kommt. */
+    private val FILLERS = listOf("MeaningChoice", "SpeakRepeat", "ListenMeaning", "TranslateToGerman")
+
+    /**
+     * Eine Aufgabe, die den Dialog als Gespräch nutzt: auf die Zeile des Gegenübers antworten.
+     * Die Ablenkung kommt aus anderen Dialogen, damit auch eine kurze Unterhaltung drei
+     * Möglichkeiten hat. Ohne Hören-Stufe 1 bleibt sie weg – dann fehlt die Grundlage.
+     */
+    private fun dialogReplyStep(
+        lesson: Lesson,
+        dialog: Step?,
+        content: ContentBundle,
+        learner: Learner,
+        random: Random
+    ): Step? {
+        val pairs = dialog?.lines.orEmpty().zipWithNext().filter { (first, second) ->
+            first.speaker != "you" && second.speaker == "you" &&
+                first.en.isNotBlank() && second.en.isNotBlank()
+        }
+        if (pairs.isEmpty() || learner.targets.of(Skill.HOEREN) < 1) return null
+        val pair = pairs[random.nextInt(pairs.size)]
+        val replies = content.lessons
+            .flatMap { it.steps }
+            .filter { it.type == "DialogInput" }
+            .flatMap { it.lines }
+            .filter { it.speaker == "you" && it.en.isNotBlank() }
+            .map { it.en }
+            .filter { it != pair.second.en }
+            .distinct()
+        val extra = replies.shuffled(random).take(2)
+        if (extra.size < 2) return null
+        return Step(
+            id = "${lesson.id}_mix_reply",
+            type = "WhichReply",
+            title = "Was passt als Antwort?",
+            promptDe = "Hör zu und wähle die Antwort, die dazu passt.",
+            promptEn = pair.first.en,
+            audio = pair.first.en,
+            target = pair.second.en,
+            options = (
+                listOf(de.sprachgefuehl.app.data.Option(text = pair.second.en, correct = true)) +
+                    extra.map { de.sprachgefuehl.app.data.Option(text = it) }
+                ).shuffled(random),
+            model = pair.second.en,
+            explanationDe = pair.second.de,
+            why = whyFor(Skill.HOEREN, learner)
+        )
+    }
+
+    /** Drei Satzenden, eins passt – gebaut aus Muster und Baustein, ohne neue Inhalte. */
+    private fun finishTheLineTask(
+        chunk: Chunk,
+        content: ContentBundle,
+        id: String,
+        random: Random,
+        why: String
+    ): Step {
+        val pattern = content.patterns.firstOrNull { it.id == chunk.patternId && it.template.contains("___") }
+        val others = content.chunks.map { it.slot }.filter { it.isNotBlank() && it != chunk.slot }.distinct()
+        if (pattern == null || chunk.slot.isBlank() || others.size < 2) {
+            return Step(
+                id = id,
+                type = "MeaningChoice",
+                title = "Was heißt das?",
+                promptDe = "Wähle die passende Bedeutung.",
+                promptEn = chunk.en,
+                target = chunk.de,
+                options = meaningOptions(chunk, content, random),
+                model = chunk.de,
+                chunkId = chunk.id,
+                explanationDe = chunk.tip,
+                why = why
+            )
+        }
+        return Step(
+            id = id,
+            type = "FinishTheLine",
+            title = "Wie endet der Satz?",
+            promptDe = "Wähle das Wort für die Lücke.",
+            promptEn = pattern.template,
+            target = chunk.en,
+            options = (
+                listOf(de.sprachgefuehl.app.data.Option(text = chunk.slot, correct = true)) +
+                    others.shuffled(random).take(2).map { de.sprachgefuehl.app.data.Option(text = it) }
+                ).shuffled(random),
+            model = chunk.en,
+            chunkId = chunk.id,
+            explanationDe = chunk.tip,
+            why = why
+        )
+    }
     private fun seed(lessonId: String, globalSeed: Long, day: Long, run: Int): Long =
         globalSeed xor lessonId.hashCode().toLong() xor (day * 1_000_003L) xor (run * 7_919L)
 
@@ -214,8 +306,8 @@ object LessonMixer {
         )
         Skill.HOEREN -> listOf(
             listOf("ListenMeaning", "MinimalPair"),
-            listOf("ListenMeaning", "ListenNumber", "TrueFalse", "MinimalPair"),
-            listOf("Dictation", "UnderstandFastSpeech", "ListenNumber", "TrueFalse", "ListenMeaning", "MinimalPair"),
+            listOf("ListenMeaning", "ListenNumber", "TrueFalse", "MinimalPair", "WhichReply"),
+            listOf("Dictation", "UnderstandFastSpeech", "ListenNumber", "TrueFalse", "ListenMeaning", "MinimalPair", "WhichReply"),
             listOf("Dictation", "UnderstandFastSpeech")
         )
         Skill.GRAMMATIK -> listOf(
@@ -225,9 +317,9 @@ object LessonMixer {
             listOf("BuildSentence", "GapFill")
         )
         Skill.BAUSTEINE -> listOf(
-            listOf("MeaningChoice", "TranslateToGerman"),
-            listOf("MeaningChoice", "TranslateToGerman", "OddOneOut"),
-            listOf("OddOneOut", "TranslateToGerman", "MeaningChoice"),
+            listOf("MeaningChoice", "TranslateToGerman", "FinishTheLine"),
+            listOf("MeaningChoice", "TranslateToGerman", "OddOneOut", "FinishTheLine"),
+            listOf("OddOneOut", "TranslateToGerman", "MeaningChoice", "FinishTheLine"),
             listOf("OddOneOut", "TranslateToGerman")
         )
         // Verknüpfen hat seinen eigenen Schritt und wird hier nicht gezogen.
@@ -320,6 +412,13 @@ object LessonMixer {
                 explanationDe = chunk.tip,
                 why = why
             )
+            "WhichReply" -> dialogReplyStep(
+                lesson,
+                lesson.steps.firstOrNull { it.type == "DialogInput" },
+                content,
+                learner,
+                random
+            ) ?: task("ListenMeaning", chunk, lesson, content, random, index, learner).copy(why = why)
             "ListenMeaning" -> Step(
                 id = id,
                 type = type,
@@ -344,6 +443,7 @@ object LessonMixer {
             )
             "GapFill" -> gapFillTask(chunk, id, content, random, why)
                 ?: task("MeaningChoice", chunk, lesson, content, random, index, learner).copy(why = why)
+            "FinishTheLine" -> finishTheLineTask(chunk, content, id, random, why)
             "Shadowing" -> Step(
                 id = id,
                 type = type,
