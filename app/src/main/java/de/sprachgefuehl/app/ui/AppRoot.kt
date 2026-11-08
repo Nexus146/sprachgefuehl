@@ -2,7 +2,9 @@ package de.sprachgefuehl.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -32,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.sprachgefuehl.app.AppUiState
 import de.sprachgefuehl.app.AppViewModel
 import de.sprachgefuehl.app.Screen
+import de.sprachgefuehl.app.ui.components.AdaptiveFrame
+import de.sprachgefuehl.app.ui.components.AppBackground
 import de.sprachgefuehl.app.ui.components.AppTabBar
 import de.sprachgefuehl.app.ui.navigation.AppTab
 import de.sprachgefuehl.app.ui.screens.AccountScreen
@@ -54,6 +58,7 @@ import de.sprachgefuehl.app.ui.screens.SettingsScreen
 import de.sprachgefuehl.app.ui.screens.SkillProfileScreen
 import de.sprachgefuehl.app.ui.screens.SituationScreen
 import de.sprachgefuehl.app.ui.screens.WorkshopScreen
+import de.sprachgefuehl.app.ui.theme.LocalMotion
 import de.sprachgefuehl.app.ui.theme.Spacing
 
 @Composable
@@ -61,6 +66,7 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
     val screen by vm.screen.collectAsStateWithLifecycle()
     val tab by vm.tab.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
+    val motion = LocalMotion.current
 
     // The bar belongs to the four roots. Inside a lesson or a detail page it disappears, so the
     // learner has one clear way forward instead of four tempting exits.
@@ -77,11 +83,8 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
     // The Box paints the whole window (including the system bar insets); the Surface only provides
     // the content colour, so text without an explicit colour stays readable in the dark theme
     // instead of falling back to black.
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    // Der Verlauf liegt hinter allem und scrollt nicht mit: Tiefe, ohne unruhig zu werden.
+    AppBackground {
         Column(modifier = Modifier.fillMaxSize()) {
             val insets = if (showTabs) {
                 Modifier.windowInsetsPadding(
@@ -104,12 +107,19 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
                     state.loading -> LoadingState()
                     state.error != null -> ErrorState(state.error ?: "")
                     account.isAdmin -> AdminScreen(vm = vm, state = state, account = account)
-                    !state.progress.onboarded -> OnboardingScreen(vm = vm, state = state)
+                    !state.progress.onboarded -> AdaptiveFrame { OnboardingScreen(vm = vm, state = state) }
                     else -> AnimatedContent(
                         targetState = screen,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        transitionSpec = {
+                            (fadeIn(tween(motion.base, easing = motion.easing)) +
+                                scaleIn(
+                                    initialScale = 0.98f,
+                                    animationSpec = tween(motion.base, easing = motion.easing)
+                                )).togetherWith(fadeOut(tween(motion.fast)))
+                        },
                         label = "screen"
                     ) { target ->
+                        AdaptiveFrame {
                         when (target) {
                             Screen.Home -> HomeScreen(vm, state)
                             Screen.Paths -> PathsScreen(vm, state)
@@ -134,6 +144,7 @@ fun AppRoot(vm: AppViewModel, state: AppUiState) {
                             Screen.Guide -> GuideScreen(vm)
                             Screen.Account -> AccountScreen(vm, state)
                             Screen.Onboarding -> OnboardingScreen(vm, state)
+                        }
                         }
                     }
                 }

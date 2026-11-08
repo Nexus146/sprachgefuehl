@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -78,13 +79,155 @@ fun GardenFullscreen(progress: Progress, onDismiss: () -> Unit) {
                 Text(
                     "${Phrasing.minutes(progress.totalMinutes)} insgesamt · " +
                         "${Phrasing.activeDays(progress.activeDays)} · " +
-                        "${progress.sessions.size} Runden",
+                        "${progress.sessions.size} ${if (progress.sessions.size == 1) "Runde" else "Runden"}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Garden.nextStep(progress)?.let { next ->
                     Spacer(Modifier.height(Spacing.s))
                     Text(next, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(Modifier.height(Spacing.l))
+                Text("Deine fünf Beete", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Jedes Beet gehört zu einem Bereich und wächst, wenn du dort sicherer wirst.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.s))
+                Garden.beds(progress).forEach { bed ->
+                    Surface(
+                        shape = RoundedCornerShape(Sizes.cornerSmall),
+                        color = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Spacing.s)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(Spacing.m),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            GardenPlot(
+                                bed = bed,
+                                modifier = Modifier.size(width = 52.dp, height = 64.dp)
+                            )
+                            Spacer(Modifier.width(Spacing.m))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "${bed.title} · ${bed.plant.name}",
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Text(
+                                    bed.note,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (bed.observed) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                bed.nextLine?.let { line ->
+                                    Text(
+                                        line,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(Spacing.m))
+                Text("Gartenbewohner", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Sie kommen, wenn ein Bereich blüht oder ein Stück Garten steht.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.s))
+                Garden.residents(progress).forEach { resident ->
+                    Surface(
+                        shape = RoundedCornerShape(Sizes.cornerSmall),
+                        color = if (resident.present) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Spacing.s)
+                    ) {
+                        Column(Modifier.padding(Spacing.m)) {
+                            Text(
+                                resident.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (resident.present) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                if (resident.present) "ist da" else resident.line,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (resident.present) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(Spacing.m))
+                Text("Im Garten", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Mit jeder Runde kommt ein Stück dazu – auch nach einer Pause bleibt alles stehen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(Spacing.s))
+                Garden.features(progress).forEach { feature ->
+                    Surface(
+                        shape = RoundedCornerShape(Sizes.cornerSmall),
+                        color = if (feature.reached) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Spacing.s)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(Spacing.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                feature.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (feature.reached) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                if (feature.reached) "steht"
+                                else "ab ${feature.fromRounds} " +
+                                    if (feature.fromRounds == 1) "Runde" else "Runden",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (feature.reached) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Garden.nextFeature(progress)?.let { next ->
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(next, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(Modifier.height(Spacing.m))
+                Text("Zuletzt im Garten", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.xs))
+                val notes = Garden.chronicle(progress)
+                if (notes.isEmpty()) {
+                    Text(
+                        "Sobald du eine Runde machst, steht hier, was gewachsen ist.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    notes.forEach { note ->
+                        Text(note, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(Spacing.xs))
+                    }
                 }
                 Spacer(Modifier.height(Spacing.l))
                 Text("Die fünf Stufen", style = MaterialTheme.typography.titleMedium)

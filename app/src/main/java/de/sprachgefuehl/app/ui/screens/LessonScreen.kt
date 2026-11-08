@@ -92,6 +92,9 @@ import de.sprachgefuehl.app.ui.components.SoftCard
 import de.sprachgefuehl.app.ui.components.SpeakerBadge
 import de.sprachgefuehl.app.ui.components.Waveform
 import de.sprachgefuehl.app.ui.components.plural
+import de.sprachgefuehl.app.ui.components.pressScale
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import de.sprachgefuehl.app.ui.speech.SpeechController
 import de.sprachgefuehl.app.ui.speech.rememberSpeechController
 import de.sprachgefuehl.app.ui.theme.LocalSprachColors
@@ -99,6 +102,9 @@ import de.sprachgefuehl.app.ui.theme.Sizes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import de.sprachgefuehl.app.ui.theme.Spacing
+import de.sprachgefuehl.app.ui.components.TapSurface
+import de.sprachgefuehl.app.ui.components.cardBorder
+import de.sprachgefuehl.app.ui.components.cardElevation
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -569,7 +575,7 @@ private fun DialogBody(step: Step, speech: SpeechController) {
             Text(step.promptDe, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(Spacing.m))
         }
-        Surface(
+        TapSurface(
             onClick = { playAll() },
             shape = RoundedCornerShape(100),
             color = MaterialTheme.colorScheme.primaryContainer
@@ -630,6 +636,8 @@ private fun InfoBody(step: Step, speech: SpeechController) {
             Surface(
                 shape = RoundedCornerShape(Sizes.corner),
                 color = MaterialTheme.colorScheme.primaryContainer,
+                shadowElevation = cardElevation(),
+                border = cardBorder(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(Spacing.l)) {
@@ -682,7 +690,7 @@ private fun InfoBody(step: Step, speech: SpeechController) {
 
 @Composable
 private fun SpeechButton(label: String, rate: Float, speech: SpeechController, text: String) {
-    Surface(
+    TapSurface(
         onClick = { speech.speak(text, rate) },
         shape = RoundedCornerShape(100),
         color = MaterialTheme.colorScheme.surface
@@ -789,6 +797,7 @@ private fun ComprehensionBody(
         question.options.forEachIndexed { index, option ->
             val isSelected = selected == index
             val isAnswer = checked && index == question.answer
+            val press = remember { MutableInteractionSource() }
             Surface(
                 shape = RoundedCornerShape(Sizes.cornerSmall),
                 color = if (isSelected || isAnswer) MaterialTheme.colorScheme.primaryContainer
@@ -796,12 +805,15 @@ private fun ComprehensionBody(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = Spacing.s)
+                    .pressScale(press)
                     // Echte Auswahl statt bloßer Farbe: Rolle und Zustand landen so auch in der
                     // Accessibility-Info, aus der Screenreader ihre Ansage bauen.
                     .selectable(
                         selected = isSelected,
                         enabled = enabled && !checked,
                         role = Role.RadioButton,
+                        interactionSource = press,
+                        indication = LocalIndication.current,
                         // Erneuter Tipp auf die gewählte Zeile hebt die Auswahl wieder auf.
                         onClick = { if (!checked) selected = if (selected == index) -1 else index }
                     )
@@ -913,18 +925,22 @@ private fun ChoiceBody(
         SectionLabel("Deine Antwort")
         step.options.forEachIndexed { index, option ->
             val isSelected = selected == index
+            val press = remember { MutableInteractionSource() }
             Surface(
                 shape = RoundedCornerShape(Sizes.cornerSmall),
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = Spacing.s)
+                    .pressScale(press)
                     // Echte Auswahl statt bloßer Farbe: Rolle und Zustand landen so auch in der
                     // Accessibility-Info, aus der Screenreader ihre Ansage bauen.
                     .selectable(
                         selected = isSelected,
                         enabled = enabled && !checked,
                         role = Role.RadioButton,
+                        interactionSource = press,
+                        indication = LocalIndication.current,
                         // Erneuter Tipp auf die gewählte Zeile hebt die Auswahl wieder auf.
                         onClick = { if (!checked) selected = if (selected == index) -1 else index }
                     )
@@ -1231,6 +1247,8 @@ private fun SpeakBody(
             Surface(
                 shape = RoundedCornerShape(Sizes.corner),
                 color = MaterialTheme.colorScheme.surface,
+                shadowElevation = cardElevation(),
+                border = cardBorder(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(Spacing.l)) {
@@ -1242,7 +1260,7 @@ private fun SpeakBody(
                     Spacer(Modifier.height(Spacing.s))
                     step.understandingOptions.forEachIndexed { index, option ->
                         val correct = index == step.understandingAnswer
-                        Surface(
+                        TapSurface(
                             onClick = {
                                 gatePassed = true
                                 gateWrong = !correct
@@ -1362,7 +1380,7 @@ private fun SpeakBody(
                 Text("Ich habe gehört: „$spoken“", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(Spacing.m))
-            Surface(
+            TapSurface(
                 onClick = onHint,
                 shape = RoundedCornerShape(100),
                 color = MaterialTheme.colorScheme.surfaceVariant

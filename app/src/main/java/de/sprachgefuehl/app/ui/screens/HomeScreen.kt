@@ -58,6 +58,8 @@ import de.sprachgefuehl.app.domain.Phrasing
 import de.sprachgefuehl.app.domain.ProfileCatalog
 import de.sprachgefuehl.app.domain.Srs
 import de.sprachgefuehl.app.domain.Streak
+import de.sprachgefuehl.app.ui.components.AnimatedCount
+import de.sprachgefuehl.app.ui.components.reveal
 import de.sprachgefuehl.app.domain.VariantPicker
 import de.sprachgefuehl.app.ui.components.BigButton
 import de.sprachgefuehl.app.ui.components.GardenFullscreen
@@ -161,7 +163,7 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
 
         // ---- 1. What is next -------------------------------------------------------------------
         if (step != null) {
-            SoftCard {
+            SoftCard(modifier = Modifier.reveal(1)) {
                 Text(
                     step.label,
                     style = MaterialTheme.typography.labelMedium,
@@ -225,7 +227,7 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
 
         // ---- 2. How it continues ---------------------------------------------------------------
         if (journey != null) {
-            SoftCard {
+            SoftCard(modifier = Modifier.reveal(2)) {
                 Text(
                     "Dein Weg",
                     style = MaterialTheme.typography.labelMedium,
@@ -294,7 +296,7 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
         }
 
         // ---- 3. Today --------------------------------------------------------------------------
-        SoftCard {
+        SoftCard(modifier = Modifier.reveal(3)) {
             RingSummary(
                 progress = if (goal > 0) minutesToday.toFloat() / goal.toFloat() else 0f,
                 top = "$minutesToday",
@@ -320,7 +322,7 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
 
         Spacer(Modifier.height(Spacing.m))
 
-        SoftCard {
+        SoftCard(modifier = Modifier.reveal(4)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Tagesstreak",
@@ -328,8 +330,14 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.weight(1f))
+                AnimatedCount(
+                    value = streak.current,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(Spacing.xs))
                 Text(
-                    "${streak.current} ${if (streak.current == 1) "Tag" else "Tage"}",
+                    if (streak.current == 1) "Tag" else "Tage",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -372,7 +380,7 @@ fun HomeScreen(vm: AppViewModel, state: AppUiState) {
 
         Spacer(Modifier.height(Spacing.m))
 
-        SoftCard {
+        SoftCard(modifier = Modifier.reveal(5)) {
             GardenSummary(
                 stage = gardenStage,
                 title = "Dein Sprachgarten",

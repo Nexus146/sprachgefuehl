@@ -28,6 +28,8 @@ import de.sprachgefuehl.app.data.ErrorCard
 import de.sprachgefuehl.app.ui.theme.LocalSprachColors
 import de.sprachgefuehl.app.ui.theme.Sizes
 import de.sprachgefuehl.app.ui.theme.Spacing
+import de.sprachgefuehl.app.ui.components.cardBorder
+import de.sprachgefuehl.app.ui.components.cardElevation
 
 enum class FeedbackTone { GOOD, ALMOST, RETRY }
 
@@ -52,6 +54,8 @@ fun FeedbackPanel(
     Surface(
         shape = RoundedCornerShape(Sizes.corner),
         color = background,
+        shadowElevation = cardElevation(),
+        border = cardBorder(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(Spacing.l)) {
@@ -82,7 +86,7 @@ fun FeedbackPanel(
                         )
                     }
                     Spacer(Modifier.width(Spacing.s))
-                    Surface(
+                    TapSurface(
                         onClick = onSpeakModel,
                         shape = RoundedCornerShape(100),
                         color = MaterialTheme.colorScheme.surface,
@@ -146,7 +150,7 @@ fun ErrorCardContent(card: ErrorCard, onSpeak: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
-            Surface(
+            TapSurface(
                 onClick = onSpeak,
                 shape = RoundedCornerShape(100),
                 color = MaterialTheme.colorScheme.surface,
