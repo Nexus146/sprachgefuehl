@@ -1680,3 +1680,59 @@ Bausteine:
 
 - **Thank you for the lovely evening.** – Danke für den schönen Abend. (Muster: Thank you for ___)
 - **I loved it.** – Es hat mir sehr gefallen. (Muster: I ___ it)
+
+
+## Beim Friseur (alltag)
+
+Szene: Ein Termin, ein Wunsch, ein Spiegel – Lena schneidet.
+
+### Lektion 1: Einen Termin machen
+
+Ziel: Ich kann höflich einen Termin vereinbaren.
+
+| Sprecher | Englisch | Deutsch |
+|---|---|---|
+
+| you | I’d like to make an appointment. | Ich möchte einen Termin machen. |
+| lena | Does Thursday morning work? | Passt Donnerstagvormittag? |
+| you | Thursday is good for me. | Donnerstag passt mir gut. |
+| lena | See you then. | Bis dann. |
+
+Bausteine:
+
+- **I’d like to make an appointment.** – Ich möchte einen Termin machen. (Muster: I’d like to make ___)
+- **Does Thursday morning work?** – Passt Donnerstagvormittag? (Muster: Does ___ work?)
+
+### Lektion 2: Den Wunsch beschreiben
+
+Ziel: Ich kann sagen, wie ich es haben möchte.
+
+| Sprecher | Englisch | Deutsch |
+|---|---|---|
+
+| you | A little shorter, please. | Etwas kürzer, bitte. |
+| lena | Just the ends? | Nur die Spitzen? |
+| you | Yes, just the ends. | Ja, nur die Spitzen. |
+| lena | That will be easy. | Das wird einfach. |
+
+Bausteine:
+
+- **A little shorter, please.** – Etwas kürzer, bitte. (Muster: A little ___, please)
+- **Just the ends, please.** – Nur die Spitzen, bitte. (Muster: Just ___ , please)
+
+### Lektion 3: Bezahlen und Trinkgeld
+
+Ziel: Ich kann fragen, was es kostet, und passend zahlen.
+
+| Sprecher | Englisch | Deutsch |
+|---|---|---|
+
+| you | How much is it? | Wie viel kostet es? |
+| lena | Twenty euros. | Zwanzig Euro. |
+| you | Here you are. Keep the change. | Bitte schön. Stimmt so. |
+| lena | Thank you. See you next time. | Danke. Bis zum nächsten Mal. |
+
+Bausteine:
+
+- **How much is it?** – Wie viel kostet es? (Muster: How much ___ it?)
+- **Keep the change.** – Stimmt so. (Muster: Keep the ___)

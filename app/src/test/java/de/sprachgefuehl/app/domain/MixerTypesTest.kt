@@ -15,7 +15,8 @@ class MixerTypesTest {
 
     private fun stepsAcrossDays(): List<de.sprachgefuehl.app.data.Step> {
         val progress = Progress(seed = 42, selfRating = 2)
-        return (0 until 24).flatMap { index ->
+        // Sechzig Tage: Ein einzelner Tag zeigt nicht jede Form – das ist gerade der Punkt.
+        return (0 until 60).flatMap { index ->
             val lesson = content.lessons[index % content.lessons.size]
             LessonMixer.steps(lesson, content, progress, day = 22_000L + index)
         }
@@ -29,7 +30,8 @@ class MixerTypesTest {
             "GapFill", "Dictation", "Recall", "ChooseConnector",
             "Shadowing", "Paraphrase", "AnswerQuestion", "WhatsAppReply",
             "ListenNumber", "MinimalPair", "UnderstandFastSpeech",
-            "OddOneOut", "CorrectTheSentence", "TrueFalse", "TranslateToGerman"
+            "OddOneOut", "CorrectTheSentence", "TrueFalse", "TranslateToGerman",
+            "WhichReply", "FinishTheLine"
         )
         val missing = expected - types
         assertTrue("Diese Typen entstehen nie: $missing. Gefunden: $types", missing.isEmpty())
@@ -40,7 +42,7 @@ class MixerTypesTest {
         val choiceTypes = setOf(
             "MeaningChoice", "ListenMeaning", "GapFill", "UnderstandFastSpeech",
             "TranslateToGerman", "TrueFalse", "CorrectTheSentence", "OddOneOut",
-            "MinimalPair", "ListenNumber", "ChooseConnector"
+            "MinimalPair", "ListenNumber", "ChooseConnector", "WhichReply", "FinishTheLine"
         )
         stepsAcrossDays().filter { it.type in choiceTypes }.forEach { step ->
             assertTrue("${step.type} ${step.id}: keine Optionen", step.options.size >= 2)

@@ -41,6 +41,9 @@ val NightSurfaceHigh = Color(0xFF2A2E24)
 val NightInk = Color(0xFFF2EEE5)
 val NightInkSoft = Color(0xFFC3BDB1)
 val NightLine = Color(0xFF3A3F33)
+
+/** Umriss von Knöpfen und Karten: im Dunkeln heller, damit die Kante bei 3:1 sichtbar bleibt. */
+val NightOutline = Color(0xFF6A7159)
 val NightSage = Color(0xFF9CC4A9)
 val NightTerracotta = Color(0xFFE0A07C)
 
@@ -130,7 +133,7 @@ private val DarkScheme = darkColorScheme(
     onSurface = NightInk,
     surfaceVariant = NightSurfaceHigh,
     onSurfaceVariant = NightInkSoft,
-    outline = NightLine,
+    outline = NightOutline,
     outlineVariant = NightLine,
     error = Color(0xFFE6A79B),
     onError = Color(0xFF3A0F08)

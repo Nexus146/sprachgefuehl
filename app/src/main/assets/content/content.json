@@ -1,5 +1,5 @@
 {
-  "version": 12,
+  "version": 14,
   "world": {
     "name": "Dein Viertel",
     "intro": "Ein Viertel, ein Jahr, feste Nachbarn. Jede Lektion ist eine Begegnung – keine Insel.",
@@ -2118,6 +2118,54 @@
           "personaId": "sam",
           "greetingEn": "My son fell. Is he okay?",
           "greetingDe": "Mein Sohn ist gefallen. Ist alles okay?",
+          "interestId": ""
+        }
+      ]
+    },
+    {
+      "id": "friseur",
+      "pathId": "alltag",
+      "title": "Beim Friseur",
+      "subtitle": "Termin, Wunsch, Bezahlen",
+      "scene": "Ein Termin, ein Wunsch, ein Spiegel – Lena schneidet.",
+      "level": "A1",
+      "icon": "help",
+      "order": 10,
+      "place": "Friseur",
+      "personaIds": [
+        "lena"
+      ],
+      "season": "sommer",
+      "story": "Lena schneidet seit Jahren Haare und kennt die Sätze, die dabei helfen.",
+      "variants": [
+        {
+          "id": "friseur_kurz",
+          "story": "Du willst nur die Spitzen schneiden lassen.",
+          "scene": "Lena legt den Umhang um.",
+          "place": "Friseur",
+          "personaId": "lena",
+          "greetingEn": "How short should it be?",
+          "greetingDe": "Wie kurz soll es werden?",
+          "interestId": ""
+        },
+        {
+          "id": "friseur_termin",
+          "story": "Du brauchst kurzfristig einen Termin.",
+          "scene": "Lena schaut in den Kalender.",
+          "place": "Friseur",
+          "personaId": "lena",
+          "greetingEn": "Can you come on Friday?",
+          "greetingDe": "Können Sie am Freitag kommen?",
+          "interestId": ""
+        },
+        {
+          "id": "friseur_farbe",
+          "story": "Du möchtest wissen, was eine Farbe kostet.",
+          "scene": "Lena zeigt die Farbkarte.",
+          "place": "Friseur",
+          "personaId": "hana",
+          "greetingEn": "Do you want colour as well?",
+          "greetingDe": "Möchten Sie auch Farbe?",
           "interestId": ""
         }
       ]
@@ -35418,6 +35466,456 @@
       ],
       "recycles": [],
       "xpMinutes": 10
+    },
+    {
+      "id": "friseur_l1",
+      "situationId": "friseur",
+      "title": "Einen Termin machen",
+      "goal": "Ich kann höflich einen Termin vereinbaren.",
+      "level": "A1",
+      "order": 1,
+      "pillarId": "conditionals_would_like",
+      "connectorLevel": 1,
+      "steps": [
+        {
+          "id": "friseur_l1_s1",
+          "type": "DialogInput",
+          "title": "Hören & verstehen",
+          "promptDe": "Lena steht hinter dem Tresen.",
+          "lines": [
+            {
+              "speaker": "you",
+              "en": "I’d like to make an appointment.",
+              "de": "Ich möchte einen Termin machen."
+            },
+            {
+              "speaker": "lena",
+              "en": "Does Thursday morning work?",
+              "de": "Passt Donnerstagvormittag?"
+            },
+            {
+              "speaker": "you",
+              "en": "Thursday is good for me.",
+              "de": "Donnerstag passt mir gut."
+            },
+            {
+              "speaker": "lena",
+              "en": "See you then.",
+              "de": "Bis dann."
+            }
+          ],
+          "chunkId": "friseur_l1_c1"
+        },
+        {
+          "id": "friseur_l1_s2",
+          "type": "ComprehensionDeep",
+          "title": "Verstanden?",
+          "promptDe": "Hör noch einmal und antworte.",
+          "questions": [
+            {
+              "prompt": "Was möchte die Person?",
+              "options": [
+                "Einen Termin machen",
+                "Etwas abholen"
+              ],
+              "answer": 0,
+              "why": "„appointment“ = Termin."
+            }
+          ],
+          "chunkId": "friseur_l1_c1"
+        },
+        {
+          "id": "friseur_l1_s3",
+          "type": "Noticing",
+          "title": "Die Form dahinter",
+          "promptEn": "I’d like to make an appointment.",
+          "promptDe": "Ich möchte einen Termin machen.",
+          "explanationDe": "would like to + Grundform ist die höfliche Bitte; appointment = Termin, auch beim Arzt.",
+          "note": "Termin machen · would like to",
+          "pillarId": "conditionals_would_like",
+          "highlight": "an appointment"
+        },
+        {
+          "id": "friseur_l1_s4",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "I’d like to make an appointment.",
+          "promptDe": "Ich möchte einen Termin machen.",
+          "chunkId": "friseur_l1_c1",
+          "patternId": "friseur_appointment",
+          "target": "I’d like to make an appointment.",
+          "tip": "appointment = Termin."
+        },
+        {
+          "id": "friseur_l1_s5",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "Does Thursday morning work?",
+          "promptDe": "Passt Donnerstagvormittag?",
+          "chunkId": "friseur_l1_c2",
+          "patternId": "friseur_appointment",
+          "target": "Does Thursday morning work?",
+          "tip": "work = passen (hier)."
+        },
+        {
+          "id": "friseur_l1_s6",
+          "type": "SpeakFree",
+          "title": "Freies Sprechen",
+          "promptDe": "Sag höflich, dass du einen Termin möchtest.",
+          "target": "I’d like to make an appointment.",
+          "accept": [
+            "I’d like to make an appointment."
+          ],
+          "requiredForm": [
+            "appointment"
+          ],
+          "model": "I’d like to make an appointment.",
+          "hint": "I’d like to make an appointment."
+        },
+        {
+          "id": "friseur_l1_s7",
+          "type": "GrammarSpot",
+          "title": "Kurz zur Grammatik",
+          "promptDe": "Welche Frage ist höflich?",
+          "questions": [
+            {
+              "prompt": "Welche Frage ist höflich?",
+              "options": [
+                "Does Thursday morning work?",
+                "Thursday morning you work?"
+              ],
+              "answer": 0,
+              "why": "does + Grundform."
+            }
+          ],
+          "options": [
+            {
+              "text": "Does Thursday morning work?",
+              "correct": true
+            },
+            {
+              "text": "Thursday morning you work?",
+              "correct": false
+            }
+          ],
+          "explanationDe": "does + Grundform.",
+          "model": "Does Thursday morning work?",
+          "pillarId": "conditionals_would_like"
+        },
+        {
+          "id": "friseur_l1_s8",
+          "type": "SelfCheck",
+          "title": "Geschafft",
+          "promptDe": "Hat es geklappt? Sei ehrlich – das steuert die Wiederholung.",
+          "model": "Does Thursday morning work?"
+        }
+      ],
+      "chunkIds": [
+        "friseur_l1_c1",
+        "friseur_l1_c2"
+      ],
+      "recycles": [],
+      "xpMinutes": 10
+    },
+    {
+      "id": "friseur_l2",
+      "situationId": "friseur",
+      "title": "Den Wunsch beschreiben",
+      "goal": "Ich kann sagen, wie ich es haben möchte.",
+      "level": "A1",
+      "order": 2,
+      "pillarId": "comparison",
+      "connectorLevel": 1,
+      "steps": [
+        {
+          "id": "friseur_l2_s1",
+          "type": "DialogInput",
+          "title": "Hören & verstehen",
+          "promptDe": "Lena hält die Schere schon bereit.",
+          "lines": [
+            {
+              "speaker": "you",
+              "en": "A little shorter, please.",
+              "de": "Etwas kürzer, bitte."
+            },
+            {
+              "speaker": "lena",
+              "en": "Just the ends?",
+              "de": "Nur die Spitzen?"
+            },
+            {
+              "speaker": "you",
+              "en": "Yes, just the ends.",
+              "de": "Ja, nur die Spitzen."
+            },
+            {
+              "speaker": "lena",
+              "en": "That will be easy.",
+              "de": "Das wird einfach."
+            }
+          ],
+          "chunkId": "friseur_l2_c1"
+        },
+        {
+          "id": "friseur_l2_s2",
+          "type": "ComprehensionDeep",
+          "title": "Verstanden?",
+          "promptDe": "Hör noch einmal und antworte.",
+          "questions": [
+            {
+              "prompt": "Wie soll es werden?",
+              "options": [
+                "Etwas kürzer",
+                "Deutlich länger"
+              ],
+              "answer": 0,
+              "why": "„shorter“ = kürzer."
+            }
+          ],
+          "chunkId": "friseur_l2_c1"
+        },
+        {
+          "id": "friseur_l2_s3",
+          "type": "Noticing",
+          "title": "Die Form dahinter",
+          "promptEn": "A little shorter, please.",
+          "promptDe": "Etwas kürzer, bitte.",
+          "explanationDe": "Vergleich: a little + -er heißt etwas …; just = nur.",
+          "note": "Wunsch · a little shorter",
+          "pillarId": "comparison",
+          "highlight": "shorter"
+        },
+        {
+          "id": "friseur_l2_s4",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "A little shorter, please.",
+          "promptDe": "Etwas kürzer, bitte.",
+          "chunkId": "friseur_l2_c1",
+          "patternId": "friseur_shorter",
+          "target": "A little shorter, please.",
+          "tip": "shorter = kürzer (Vergleich von short)."
+        },
+        {
+          "id": "friseur_l2_s5",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "Just the ends, please.",
+          "promptDe": "Nur die Spitzen, bitte.",
+          "chunkId": "friseur_l2_c2",
+          "patternId": "friseur_shorter",
+          "target": "Just the ends, please.",
+          "tip": "ends = Spitzen."
+        },
+        {
+          "id": "friseur_l2_s6",
+          "type": "SpeakFree",
+          "title": "Freies Sprechen",
+          "promptDe": "Sag, dass es etwas kürzer werden soll.",
+          "target": "A little shorter, please.",
+          "accept": [
+            "A little shorter, please."
+          ],
+          "requiredForm": [
+            "shorter"
+          ],
+          "model": "A little shorter, please.",
+          "hint": "A little shorter, please."
+        },
+        {
+          "id": "friseur_l2_s7",
+          "type": "GrammarSpot",
+          "title": "Kurz zur Grammatik",
+          "promptDe": "Wie bildet man den Vergleich?",
+          "questions": [
+            {
+              "prompt": "Wie bildet man den Vergleich?",
+              "options": [
+                "short → shorter",
+                "short → more short"
+              ],
+              "answer": 0,
+              "why": "Kurze Wörter bekommen -er."
+            }
+          ],
+          "options": [
+            {
+              "text": "short → shorter",
+              "correct": true
+            },
+            {
+              "text": "short → more short",
+              "correct": false
+            }
+          ],
+          "explanationDe": "Kurze Wörter bekommen -er.",
+          "model": "short → shorter",
+          "pillarId": "comparison"
+        },
+        {
+          "id": "friseur_l2_s8",
+          "type": "SelfCheck",
+          "title": "Geschafft",
+          "promptDe": "Hat es geklappt? Sei ehrlich – das steuert die Wiederholung.",
+          "model": "Just the ends, please."
+        }
+      ],
+      "chunkIds": [
+        "friseur_l2_c1",
+        "friseur_l2_c2"
+      ],
+      "recycles": [],
+      "xpMinutes": 10
+    },
+    {
+      "id": "friseur_l3",
+      "situationId": "friseur",
+      "title": "Bezahlen und Trinkgeld",
+      "goal": "Ich kann fragen, was es kostet, und passend zahlen.",
+      "level": "A1",
+      "order": 3,
+      "pillarId": "word_order_question",
+      "connectorLevel": 1,
+      "steps": [
+        {
+          "id": "friseur_l3_s1",
+          "type": "DialogInput",
+          "title": "Hören & verstehen",
+          "promptDe": "Der Spiegel ist wieder frei.",
+          "lines": [
+            {
+              "speaker": "you",
+              "en": "How much is it?",
+              "de": "Wie viel kostet es?"
+            },
+            {
+              "speaker": "lena",
+              "en": "Twenty euros.",
+              "de": "Zwanzig Euro."
+            },
+            {
+              "speaker": "you",
+              "en": "Here you are. Keep the change.",
+              "de": "Bitte schön. Stimmt so."
+            },
+            {
+              "speaker": "lena",
+              "en": "Thank you. See you next time.",
+              "de": "Danke. Bis zum nächsten Mal."
+            }
+          ],
+          "chunkId": "friseur_l3_c1"
+        },
+        {
+          "id": "friseur_l3_s2",
+          "type": "ComprehensionDeep",
+          "title": "Verstanden?",
+          "promptDe": "Hör noch einmal und antworte.",
+          "questions": [
+            {
+              "prompt": "Was kostet der Haarschnitt?",
+              "options": [
+                "Zwanzig Euro",
+                "Zwölf Euro"
+              ],
+              "answer": 0,
+              "why": "„twenty euros“ = zwanzig Euro."
+            }
+          ],
+          "chunkId": "friseur_l3_c1"
+        },
+        {
+          "id": "friseur_l3_s3",
+          "type": "Noticing",
+          "title": "Die Form dahinter",
+          "promptEn": "How much is it?",
+          "promptDe": "Wie viel kostet es?",
+          "explanationDe": "Preis fragen: How much is it? Beim Bezahlen: Here you are. Keep the change.",
+          "note": "Bezahlen · How much is it?",
+          "pillarId": "word_order_question",
+          "highlight": "is"
+        },
+        {
+          "id": "friseur_l3_s4",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "How much is it?",
+          "promptDe": "Wie viel kostet es?",
+          "chunkId": "friseur_l3_c1",
+          "patternId": "friseur_pay",
+          "target": "How much is it?",
+          "tip": "how much is it = was kostet es."
+        },
+        {
+          "id": "friseur_l3_s5",
+          "type": "ChunkIntro",
+          "title": "Baustein",
+          "promptEn": "Keep the change.",
+          "promptDe": "Stimmt so.",
+          "chunkId": "friseur_l3_c2",
+          "patternId": "friseur_pay",
+          "target": "Keep the change.",
+          "tip": "change = Wechselgeld."
+        },
+        {
+          "id": "friseur_l3_s6",
+          "type": "SpeakFree",
+          "title": "Freies Sprechen",
+          "promptDe": "Frag nach dem Preis.",
+          "target": "How much is it?",
+          "accept": [
+            "How much is it?"
+          ],
+          "requiredForm": [
+            "how much"
+          ],
+          "model": "How much is it?",
+          "hint": "How much is it?"
+        },
+        {
+          "id": "friseur_l3_s7",
+          "type": "GrammarSpot",
+          "title": "Kurz zur Grammatik",
+          "promptDe": "Welche Frage ist richtig?",
+          "questions": [
+            {
+              "prompt": "Welche Frage ist richtig?",
+              "options": [
+                "How much is it?",
+                "How much it is?"
+              ],
+              "answer": 0,
+              "why": "Frage: is vor it."
+            }
+          ],
+          "options": [
+            {
+              "text": "How much is it?",
+              "correct": true
+            },
+            {
+              "text": "How much it is?",
+              "correct": false
+            }
+          ],
+          "explanationDe": "Frage: is vor it.",
+          "model": "How much is it?",
+          "pillarId": "word_order_question"
+        },
+        {
+          "id": "friseur_l3_s8",
+          "type": "SelfCheck",
+          "title": "Geschafft",
+          "promptDe": "Hat es geklappt? Sei ehrlich – das steuert die Wiederholung.",
+          "model": "Keep the change."
+        }
+      ],
+      "chunkIds": [
+        "friseur_l3_c1",
+        "friseur_l3_c2"
+      ],
+      "recycles": [],
+      "xpMinutes": 10
     }
   ],
   "pillars": [
@@ -43694,6 +44192,42 @@
         "not_hilfe_l3_c2"
       ],
       "related": []
+    },
+    {
+      "id": "friseur_appointment",
+      "template": "I’d like to make ___",
+      "de": "Ich möchte ___ machen",
+      "pillarId": "conditionals_would_like",
+      "register": "neutral",
+      "chunks": [
+        "friseur_l1_c1",
+        "friseur_l1_c2"
+      ],
+      "related": []
+    },
+    {
+      "id": "friseur_shorter",
+      "template": "A little ___, please",
+      "de": "Etwas ___, bitte",
+      "pillarId": "comparison",
+      "register": "neutral",
+      "chunks": [
+        "friseur_l2_c1",
+        "friseur_l2_c2"
+      ],
+      "related": []
+    },
+    {
+      "id": "friseur_pay",
+      "template": "How much ___ it?",
+      "de": "Wie viel ___ es?",
+      "pillarId": "word_order_question",
+      "register": "neutral",
+      "chunks": [
+        "friseur_l3_c1",
+        "friseur_l3_c2"
+      ],
+      "related": []
     }
   ],
   "chunks": [
@@ -46972,6 +47506,78 @@
       "tags": [
         "notfall"
       ]
+    },
+    {
+      "id": "friseur_l1_c1",
+      "en": "I’d like to make an appointment.",
+      "de": "Ich möchte einen Termin machen.",
+      "patternId": "friseur_appointment",
+      "slot": "an appointment",
+      "tip": "appointment = Termin.",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
+    },
+    {
+      "id": "friseur_l1_c2",
+      "en": "Does Thursday morning work?",
+      "de": "Passt Donnerstagvormittag?",
+      "patternId": "friseur_appointment",
+      "slot": "Thursday morning",
+      "tip": "work = passen (hier).",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
+    },
+    {
+      "id": "friseur_l2_c1",
+      "en": "A little shorter, please.",
+      "de": "Etwas kürzer, bitte.",
+      "patternId": "friseur_shorter",
+      "slot": "shorter",
+      "tip": "shorter = kürzer (Vergleich von short).",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
+    },
+    {
+      "id": "friseur_l2_c2",
+      "en": "Just the ends, please.",
+      "de": "Nur die Spitzen, bitte.",
+      "patternId": "friseur_shorter",
+      "slot": "the ends",
+      "tip": "ends = Spitzen.",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
+    },
+    {
+      "id": "friseur_l3_c1",
+      "en": "How much is it?",
+      "de": "Wie viel kostet es?",
+      "patternId": "friseur_pay",
+      "slot": "is",
+      "tip": "how much is it = was kostet es.",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
+    },
+    {
+      "id": "friseur_l3_c2",
+      "en": "Keep the change.",
+      "de": "Stimmt so.",
+      "patternId": "friseur_pay",
+      "slot": "change",
+      "tip": "change = Wechselgeld.",
+      "level": "A1",
+      "tags": [
+        "friseur"
+      ]
     }
   ],
   "canDo": [
@@ -47794,6 +48400,21 @@
       "id": "not_hilfe_l3_can",
       "lessonId": "not_hilfe_l3",
       "text": "Ich kann nachfragen und jemanden beruhigen."
+    },
+    {
+      "id": "friseur_l1_can",
+      "lessonId": "friseur_l1",
+      "text": "Ich kann höflich einen Termin vereinbaren."
+    },
+    {
+      "id": "friseur_l2_can",
+      "lessonId": "friseur_l2",
+      "text": "Ich kann sagen, wie ich es haben möchte."
+    },
+    {
+      "id": "friseur_l3_can",
+      "lessonId": "friseur_l3",
+      "text": "Ich kann fragen, was es kostet, und passend zahlen."
     }
   ],
   "placement": [
