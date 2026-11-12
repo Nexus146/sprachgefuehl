@@ -1,0 +1,7 @@
+Version 2.0 macht die App fertig für den Alltag:
+
+* Dunkelmodus überarbeitet: gemessene Kontraste (mindestens 4,5:1 für Text, 3:1 für Kanten und Symbole), eigene Gartenfarben für beide Darstellungen.
+* Sprachprofil: Bereich und Stufe stehen untereinander und überlagern sich nicht mehr.
+* Standortbestimmung: der Fortschrittsbalken ist im Dunkeln sichtbar.
+* Schalter, Textfelder und Dialoge folgen der warmen Farbwelt statt der System-Violetttöne.
+* 321 automatische Tests in 47 Klassen, davon ein Kontrast-Wächter für hell und dunkel.
