@@ -2,9 +2,23 @@
 
 Android-App für alle, die Englisch nicht nur erkennen, sondern **verstehen und selbst sprechen** wollen. Ruhig, offline nutzbar, ohne Zeitdruck – ein Konto ist optional. Der Fortschritt zieht per Sicherungsdatei oder Cloud auf ein neues Handy um.
 
-Arbeitstitel: Sprachgefühl. UI-Sprache Deutsch, Lernsprache Englisch.
+Name: Sprachgefühl. Oberfläche Deutsch, Lernsprache Englisch, für Android 8.0 und neuer.
 
-Aktuelle Fassung: **1.6** (versionCode 7). Die signierte APK und das fertige Upload-Paket liegen unter [`github-vorbereitung/v1.6/`](github-vorbereitung/v1.6/).
+Aktuelle Fassung: **2.0** (versionCode 8). Die fertige App hängt am GitHub-Release [`releases/latest`](https://github.com/Nexus146/sprachgefuehl/releases/latest) – derselbe Link bleibt für alle Updates. Store-Grafiken und Screenshots liegen unter [`store/`](store/), die Texte für Play Store und F-Droid in [docs/store.md](docs/store.md) und [docs/fdroid.md](docs/fdroid.md). Die signierten Pakete (APK, AAB, Prüfsummen) entstehen lokal und stehen bewusst nicht im Repo.
+
+## App installieren (ohne Play Store)
+
+1. [`releases/latest`](https://github.com/Nexus146/sprachgefuehl/releases/latest) öffnen und die
+   Datei `sprachgefuehl-*.apk` herunterladen – rund 15 MB.
+2. Antippen, auf Nachfrage „Trotzdem herunterladen" und „Installation aus dieser Quelle erlauben".
+   Play Protect meldet „App wurde nicht geprüft" – das ist normal bei Apps außerhalb des Stores:
+   **Mehr Details → Trotzdem installieren**.
+3. Updates kommen über [Obtainium](https://github.com/ImranR98/Obtainium/releases) oder per neuer
+   APK. **Drüberinstallieren, nicht deinstallieren** – dann bleiben Fortschritt und Aufnahmen.
+
+Nötig ist Android 8.0 oder neuer. Ohne Konto arbeitet die App vollständig offline. Die
+Schritt-für-Schritt-Fassung (inklusive eigenem Signaturschlüssel) steht in
+[docs/verteilen.md](docs/verteilen.md).
 
 ## Was die App macht
 
@@ -21,8 +35,8 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 - **Vier Bereiche unten**: Start, Üben, Stand, Profil. In einer Lektion verschwindet die Leiste, damit der Weg nach vorn der einzige bleibt.
 - **Profil beim ersten Start**: Name (freiwillig), Lerngrund, Interessen, Tagesziel und Lerntage entstehen im Onboarding – in zwei Schritten, jeder überspringbar. Später liegen alle Angaben zusammen unter **„Deine Angaben“** (oberste Karte im Profil), getrennt von der Statistik und den Einstellungen.
 - **Wo war ich?**: Die Startseite zeigt „Du warst hier stehen geblieben – bei Schritt 6 von 17“ samt der Zeit, die der nächste Schritt braucht, und führt mit einem Knopf zurück in die angefangene Lektion.
-- **Fünfzehn Kapitel**: Gesundheit, Leute & Small Talk, Einkaufen & Essen, Unterwegs, Alltag & Zuhause, Behörden & Termine, Feste & Einladen, Wenn’s hakt, Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn, Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe – dazu die Werkstatt. Insgesamt 52 Situationen mit 167 Lektionen, 3 bis 12 je Situation.
-- **Ein eigenes Viertel pro Lernendem**: Zu einer Situation gehören bis zu drei Erzählrahmen (insgesamt 107) – dieselben Bausteine, eine andere Geschichte. Ein gespeicherter Seed wählt aus, Interessen entscheiden bei Gleichstand: das Ziel bleibt gleich, die Geschichte nicht.
+- **Fünfzehn Kapitel**: Gesundheit, Leute & Small Talk, Einkaufen & Essen, Unterwegs, Alltag & Zuhause, Behörden & Termine, Feste & Einladen, Wenn’s hakt, Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn, Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe – dazu die Werkstatt. Insgesamt 52 Situationen mit 186 Lektionen, 3 bis 12 je Situation.
+- **Ein eigenes Viertel pro Lernendem**: Zu einer Situation gehören bis zu drei Erzählrahmen (insgesamt 115) – dieselben Bausteine, eine andere Geschichte. Ein gespeicherter Seed wählt aus, Interessen entscheiden bei Gleichstand: das Ziel bleibt gleich, die Geschichte nicht.
 - **Sichtbarer Fortschritt**: Jedes Kapitel zeigt „1 von 12 Lektionen in diesem Kapitel“, jede Situation ihren Zustand (Neu, Angefangen, Geschafft) und die nächste Lektion; die empfohlene Situation trägt „Als Nächstes“.
 - **Suche**: Sätze, Muster und Situationen auf Deutsch oder Englisch wiederfinden und direkt in der passenden Lektion üben.
 - **Tablet und große Handys**: Der Inhalt bleibt in einer ruhigen Spalte von höchstens 560 dp; die Tab-Leiste liegt über die volle Breite darunter, ihre Ziele stehen in derselben Spalte wie der Text.
@@ -31,7 +45,7 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 
 - **Üben mit Ansage**: Oben steht, was gerade ansteht („12 Sätze sind bald fällig“, „3 Sätze wackeln noch“) und welche der vier Übungsarten dazu passt; jede Karte nennt die Bereiche, die sie trainiert. Geübt wird zuerst, was fällig ist, dann Geschaffenes – nie ein Thema, das noch nicht dran war.
 - **Wiederholen auf zwei Wegen**: sprechen oder tippen, wenn es gerade laut ist. Am Ende „Noch eine Runde“, und eine angefangene Runde zählt auch beim Verlassen.
-- **Jede Runde anders – und passend**: Aus den 294 Bausteinen entstehen Runden mit 6 bis 15 Schritten (meist 13) und 11 bis 14 verschiedenen Schrittarten. Achtzehn Arten kommen vor: Baustein neu, Nachsprechen, Grammatikstelle, Noticing, Selbsteinschätzung, frei sprechen, Dialog hören, Hörverstehen vertiefen, Satz bauen, Verbindungswort wählen, Lücke sprechen, Übertragen, Sätze verbinden, Klangpaar, schnelles Sprechen, kurze Nachricht, auf die Zeile des Gegenübers antworten, Satzende wählen. Onboarding-Antworten gewichten die Bereiche, Fehler kommen in der nächsten Lektion mit dem Gehörten zurück, wackelige Sätze bekommen Stützen, sichere mehr Abruf.
+- **Jede Runde anders – und passend**: Aus den 318 Bausteinen entstehen Runden mit 6 bis 15 Schritten (meist 13) und 11 bis 14 verschiedenen Schrittarten. Neunzehn Arten kommen vor: Baustein neu, Nachsprechen, Grammatikstelle, Noticing, Selbsteinschätzung, frei sprechen, Dialog hören, Hörverstehen vertiefen, Satz bauen, Verbindungswort wählen, Lücke sprechen, Übertragen, Sätze verbinden, Klangpaar, schnelles Sprechen, kurze Nachricht, auf die Zeile des Gegenübers antworten, Satzende wählen, Gespräch ordnen. Onboarding-Antworten gewichten die Bereiche, Fehler kommen in der nächsten Lektion mit dem Gehörten zurück, wackelige Sätze bekommen Stützen, sichere mehr Abruf.
 - **Im Unterricht** steht unter dem Titel „Übt: …“, die Begründung heißt „Warum diese Aufgabe?“; am Ende siehst du, wie viele Bausteine deine Sammlung hat und wie viele Sätze zurückkommen.
 - **Standortbestimmung beim Start**: Prüfaufgaben je Bereich mit adaptiver Treppe (zwei richtige Aufgaben heben die Stufe, eine falsche senkt sie) – rund 12–15 Minuten aus 85 Aufgaben, pausierbar, ohne Noten. Wer nicht prüfen mag, startet vorsichtig nach Selbsteinschätzung.
 - **Standortbestimmung mit Pause**: jederzeit unterbrechbar; die Startseite bietet danach „weiter bei Teil 3 von 5“, das Sprachprofil ein „Standort neu bestimmen“.
@@ -41,14 +55,14 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 
 - **Stand in Worten**: Der Tab „Stand“ stellt den Sprachgarten in den Mittelpunkt – groß, mit Gartenstufe und dem nächsten Wachstumsschritt –, darunter die letzte Woche, offene Fehler, Vorwoche und Tagesziel. Pool und die fünf Bereiche stehen nur noch zugeklappt unter „Dein Lernweg“ in den Einstellungen. Die Minuten stammen aus der gemessenen Lernzeit.
 - **Sprachprofil statt einer Stufe**: fünf Bereiche (Hören, Grammatik, Bausteine, Sprechen, Verknüpfen) mit vier Stufen, fortgeschrieben aus jeder echten Aufgabe.
-- **Werkstatt**: 12 Grammatik-Säulen, 5 Stufen Verbindungswörter, Strategien (nachfragen, umschreiben, Zeit gewinnen), Klangpaare, schnelles Sprechen, kurze Nachrichten – als 20 feste Lektionen, in denen die Grammatik für sich steht.
-- **Sprachkarte**: 211 Muster mit ihren Bausteinen und Verwandtschaften; wächst mit dem Lernstand.
-- **Fehler-Werkstatt**: persönliches Fehlerprofil aus 49 Fehlerkarten und eine Wiederholungsqueue.
-- **Klangpaare**: 32 Minimalpaare für die Laute, die im Deutschen zusammenfallen.
+- **Werkstatt**: 12 Grammatik-Säulen, 5 Stufen Verbindungswörter, Strategien (nachfragen, umschreiben, Zeit gewinnen), Klangpaare, schnelles Sprechen, kurze Nachrichten, Zahlen und Zeiten – als 27 feste Lektionen, in denen die Grammatik für sich steht.
+- **Sprachkarte**: 221 Muster mit ihren Bausteinen und Verwandtschaften; wächst mit dem Lernstand.
+- **Fehler-Werkstatt**: persönliches Fehlerprofil aus 56 Fehlerkarten und eine Wiederholungsqueue.
+- **Klangpaare**: 47 Minimalpaare für die Laute, die im Deutschen zusammenfallen.
 - **Sprachgarten**: wächst mit jeder Runde, verwelkt nie, keine Rangliste – er steht im Tab „Stand“ als große Fläche und lässt sich in voller Größe ansehen.
 - **Tagesstreak statt Serie unter Druck**: Die Startseite zeigt, wie viele Tage in Folge etwas passiert ist, mit Wochenpunkten und bestem Lauf. Ein Pausentag nimmt nichts weg, die Streak mahnt nicht.
 - **Gemessene Lernzeit**: Während einer Lektion läuft ein Timer; Tagesziel, Profil und Stand nutzen die wirklich gemessenen Minuten statt einer Schätzung. Der Tagesziel-Ring hört beim Ziel auf zu füllen – wer mehr übt, sieht „10 von 10“, nicht „51 von 10“.
-- **Kann-Liste** statt Punkte: 164 Sätze wie „Ich kann sagen, was mir weh tut.“
+- **Kann-Liste** statt Punkte: 178 Sätze wie „Ich kann sagen, was mir weh tut.“
 - **Ruhiges Tagesende**: Ist das Ziel erreicht, sagt die App „Für heute reicht es“. An einem Pausentag wird nichts erwartet.
 - **Meine Sätze**: Suche, „Alle anhören“, Aufnahmen mit Datum und einzeln löschbar.
 
@@ -56,7 +70,7 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 
 - **Wörter antippen**: In Modellsätzen sind bekannte Wörter gepunktet unterstrichen; ein Tipp zeigt die deutsche Bedeutung und spricht das Wort vor.
 - **Alle Zeilen anhören**: Dialoge laufen auf Wunsch am Stück – Hände frei.
-- **Zwei Darstellungen**: hell und dunkel – wahlweise wie das Handy eingestellt. Schriftgröße bis 155 %, ruhige Übergänge; bei großer Schrift stapeln sich Karten und Ringe, statt Text zu quetschen.
+- **Zwei Darstellungen**: hell und dunkel – wahlweise wie das Handy eingestellt. Schriftgröße bis 155 %, ruhige Übergänge; bei großer Schrift stapeln sich Karten und Ringe, statt Text zu quetschen. Die Kontraste beider Darstellungen sind gemessen und als Test festgehalten (mindestens 4,5:1 für Text, 3:1 für Kanten, Symbole und Knöpfe).
 - **Einstellungen in drei Teilen**: Darstellung, Stimme, Daten – dazu der zugeklappte Bereich „Dein Lernweg“. Die Stimmwahl („Langsam / Normal / Zügig“) gilt für alle Modellsätze; in Üben, Lektion und Prüfung gibt es zusätzlich einen „Langsam“-Knopf. Alles Persönliche steht gebündelt unter „Deine Angaben“ im Profil.
 - **Konto optional**: Ohne Anmeldung bleibt alles auf dem Gerät. Wer möchte, verbindet ein Supabase-Konto und sichert Fortschritt, Sätze und optional die Aufnahmen in der Cloud ([docs/accounts.md](docs/accounts.md)).
 - **Sicherungsdatei bleibt**: Für ein neues Handy kann man weiterhin eine Datei erstellen und dort wieder laden ([docs/backup.md](docs/backup.md)).
@@ -68,16 +82,16 @@ Jede Lektion verbindet fünf Dinge, die in Sprachlern-Apps oft getrennt sind:
 |---|---|
 | Kapitel | 15 (14 Alltagskapitel + Werkstatt) |
 | Situationen | 52 |
-| Lektionen | 167 (147 gemischt, 20 Werkstatt) |
-| Erzählrahmen | 107, bis zu drei je Situation |
-| Bausteine | 294 |
-| Muster | 211 |
-| Kann-Sätze | 167 |
-| Fehlerkarten | 49 |
-| Minimalpaare | 32 |
+| Lektionen | 186 (159 gemischt, 27 Werkstatt) |
+| Erzählrahmen | 115, bis zu drei je Situation |
+| Bausteine | 318 |
+| Muster | 221 |
+| Kann-Sätze | 178 |
+| Fehlerkarten | 56 |
+| Minimalpaare | 47 |
 | Prüfaufgaben der Standortbestimmung | 85 |
 | Personen im Viertel | 7 |
-| JVM-Tests | 316 in 46 Klassen |
+| JVM-Tests | 321 in 47 Klassen |
 
 ## Wissenschaftliche Grundlage (kurz)
 
@@ -112,13 +126,22 @@ app/src/main/java/de/sprachgefuehl/app/
   ui/screens/                  Start, Üben, Stand, Profil, Lektion, Prüfung, Werkstatt, Suche …
   ui/                          Compose-Theme, Farben, Typografie
 app/src/main/assets/content/content.json    generierte Inhalte
-app/src/test/                 316 JVM-Tests in 46 Klassen, inkl. Content-Validator, TaskAudit,
+app/src/test/                 321 JVM-Tests in 47 Klassen, inkl. Content-Validator, TaskAudit,
                               Suche, Skills, Check-up, Sicherungsformat, Aufgabenmix, Übersicht,
-                              Streak, Lern-Engine und dem Wächter für alte Speicherstände
+                              Streak, Lern-Engine, Farbkontrasten (hell/dunkel) und dem Wächter
+                              für alte Speicherstände
 tools/                        Inhaltskatalog und Generator
-docs/                         Design, Prüfbogen, Test-Checkliste, Store-Vorbereitung, Verteilen
-github-vorbereitung/          fertige Release-Pakete (APK, ZIP, Notizen, Prüfsummen)
+tools/StoreGraphics.java      rendert Icon und Feature-Grafik (Java2D, ohne Zusatzwerkzeug)
+store/                        Icon 512, Feature-Grafik 1024×500, Store-Screenshots
+fastlane/metadata/android/    Titel, Beschreibungen und Changelog für F-Droid
+docs/                         Design, Prüfbogen, Test-Checkliste, Store-Texte, Datenschutz,
+                              F-Droid, Verteilen
+LICENSE                       Apache-2.0
 ```
+
+Release-Pakete (APK, AAB, ZIP, Prüfsummen) entstehen lokal in `github-vorbereitung/v2.0/` und
+stehen in `.gitignore`; ins Repo kommt nur der Quellcode. Ohne diesen Ausschluss wären es 59 MB
+Binärdateien, was F-Droid ablehnt.
 
 ## Bauen
 
@@ -144,14 +167,15 @@ Ohne diese Werte bleibt der Build lokal und die Konto-Seite zeigt einen Einricht
 
 Eine signierte Release-APK entsteht, sobald `keystore.properties` im Projektwurzelverzeichnis
 liegt: `./gradlew :app:assembleRelease`. Schritt für Schritt steht das in
-[docs/store.md](docs/store.md).
+[docs/store.md](docs/store.md). Für den Play Store kommt daneben das Bundle:
+`./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`.
 
 ## Version und Veröffentlichung
 
-- **1.6** (versionCode 7) ist die aktuelle Fassung: zwei neue Aufgabenformen (Antwort auf eine Gehörte Zeile, Satzende wählen), die Situation „Beim Friseur" und mehr Abwechslung in kurzen Runden. Signierte APK (ca. 15 MB), Upload-ZIP für GitHub, Release-Notizen, Anleitung und Prüfsummen liegen in [`github-vorbereitung/v1.6/`](github-vorbereitung/v1.6/).
+- **2.0** (versionCode 8) ist die erste vollständige Fassung und für den Play Store vorbereitet: Kontraste gemessen und als Test festgehalten, Schalter und Textfelder in der Garten-Palette, Sprachprofil ohne Überlappung, Standortbalken im Dunkeln sichtbar. Store-Texte, Data-Safety-Antworten und die Schritte für die Play Console stehen in [docs/store.md](docs/store.md), die F-Droid-Vorbereitung samt fertiger Metadaten in [docs/fdroid.md](docs/fdroid.md), die Datenschutz-Erklärung in [docs/datenschutz.md](docs/datenschutz.md).
+- **1.6** (versionCode 7) brachte zwei neue Aufgabenformen (Antwort auf eine gehörte Zeile, Satzende wählen), die Situation „Beim Friseur" und mehr Abwechslung in kurzen Runden.
 - **1.5** (versionCode 6) brachte Tiefe in der Oberfläche: Kanten und Erhebung, ein antwortender Hauptknopf, Garten in Beeten, lesbare Spalte auf dem Tablet.
-- Der Prüfsummenstand steht in `github-vorbereitung/v1.6/SHA256SUMS_v1.6.txt`, die Reihenfolge der Schritte in `github-vorbereitung/v1.6/ANLEITUNG-GITHUB.md`.
-- Ältere Zwischenpakete werden nicht aufgehoben; `github-vorbereitung/README.md` nennt die jeweils gültige Fassung.
+- Die Release-Pakete selbst (APK, AAB, ZIP, Prüfsummen, Anleitung) liegen lokal in `github-vorbereitung/v2.0/`; im Repo steht der Quellcode, veröffentlicht wird über die Releases-Seite.
 - Für eine erste Runde mit echten Lernenden: [docs/testleitfaden.md](docs/testleitfaden.md).
 
 ## Updates und alter Speicherstand
@@ -164,11 +188,11 @@ Jedes Update – neue Lektionen, größerer Aufgabenpool, neue Einstellung – m
 ./gradlew :app:testDebugUnitTest
 ```
 
-316 Tests in 46 Klassen prüfen: SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, den Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien), die Sync-Entscheidungen und Aufnahme-Pfade sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
+321 Tests in 47 Klassen prüfen: die Kontraste beider Darstellungen (Text, Sekundärtext, Knöpfe, Pillen, Warn- und Fehlerfarbe, Kartenkanten, Garten), SRS-Intervalle und Stufen, Scoring (inkl. Kontraktionen und Zahlwörter), Fehlerdiagnose-Regeln, Lektionsreihenfolge, Review-Queue, Remediation-Sortierung, Gartenregeln ohne Verlust, die Glättung des Sprachprofils, die Check-up-Treppe inklusive Pause und Fortsetzen, die stabile Variantenwahl, den Tagesplan-Fokus, die Suche über deutsche und englische Inhalte, die Fortschrittslogik, Tagesziel und Pausentage, das Sicherungsformat (Paket mit Aufnahmen, alte JSON-Dateien, Abweisung fremder Dateien), die Sync-Entscheidungen und Aufnahme-Pfade sowie die Vollständigkeit aller Inhalte (IDs, Varianten je Situation, Prüfaufgaben je Bereich und Stufe, Sprechaufgaben, Fehlerkarten, Muster).
 
 `ProgressUpgradeTest` ist der Wächter für Updates (siehe [docs/kompatibilitaet.md](docs/kompatibilitaet.md)): kein gespeichertes Feld ohne Default, alte Dateien laden, verschwundene Inhalte werden aussortiert, eine angefangene Lektion bleibt, und die adaptiven Teile rechnen auf einem alten Stand weiter.
 
-Dazu kommt `TaskAuditTest`: Er prüft die 1.900 von Hand geschriebenen Schritte und 432 generierten Runden darauf, dass jede Aufgabe lösbar ist, eine eindeutige Lösung hat und die Runde abwechslungsreich bleibt. Wo der Katalog keine Lösung mitliefert (Verbinden, Klangpaar, schnelles Sprechen), leitet `AnswerKey` sie mit ausdrücklichen Regeln ab – ist keine eindeutig, gilt nichts als falsch.
+Dazu kommt `TaskAuditTest`: Er prüft die 2.128 von Hand geschriebenen Schritte und 477 generierten Runden darauf, dass jede Aufgabe lösbar ist, eine eindeutige Lösung hat und die Runde abwechslungsreich bleibt. Wo der Katalog keine Lösung mitliefert (Verbinden, Klangpaar, schnelles Sprechen), leitet `AnswerKey` sie mit ausdrücklichen Regeln ab – ist keine eindeutig, gilt nichts als falsch.
 
 ## Inhalte bearbeiten
 
@@ -184,15 +208,14 @@ tools/situations5.mjs     Behörden und Feste
 tools/situations3.mjs     Restaurant und weitere Gelegenheiten (Staffel 2)
 tools/situations4.mjs     Post und weitere Gelegenheiten (Staffel 2)
 tools/expand-content.js  Trägt Zusatz-Situationen in content.json ein (idempotent)
-tools/new-lessons.js     Arbeit, Reisen, Wohnen – Lektionen für den Nachtrag
-tools/new-lessons-c.js   Beim Friseur: Termin, Wunsch, Bezahlen
-tools/new-lessons.js      Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn
+tools/new-lessons.js     Arbeit & Büro, Reisen & Urlaub, Wohnen & Nachbarn
 tools/new-lessons-b.js    Telefon & Digitales, Sport & Freizeit, Notfälle & Hilfe
+tools/new-lessons-c.js    Beim Friseur: Termin, Wunsch, Bezahlen
+tools/new-numbers.js     Zahlen, Uhrzeiten, Preise, Datum, Telefonnummern
 tools/new-extras.js       Fehlerkarten, Minimalpaare, Standort-Aufgaben
 tools/variants.mjs        zweiter und dritter Erzählrahmen je Situation
 tools/variants2.mjs       weitere Erzählrahmen
 tools/checkup.mjs         Prüfpool der Standortbestimmung
-tools/expand-content.js   ergänzt content.json um Pfade, Lektionen und Pool-Material (idempotent)
 tools/generate.mjs        baut Schritte, Muster, can-do-Liste und validiert
 ```
 
@@ -219,6 +242,9 @@ deutscher Prüfbogen mit allen Sätzen – zum Gegenlesen mit Muttersprachlern.
 - **Signatur nur auf Wunsch.** Ohne `keystore.properties` bleibt es bei der debug-signierten APK
   für Sideload. Sobald die Datei da ist, baut `assembleRelease` eine signierte Version
   (`docs/store.md`).
+- **Kein R8/Minify.** Die Release-APK ist mit 14,6 MB klein genug, und ein nachträglich
+  eingeschalteter Verkleinerer könnte zur Laufzeit brechen – in einer Release-Runde kein Risiko,
+  das man eingeht. Bleibt als Aufgabe für eine spätere Version mit eigener Testrunde.
 
 ## Datenschutz
 
@@ -230,7 +256,15 @@ Konto wird sie nicht genutzt. Mit Konto liegen die Daten in deinem Supabase-Proj
 Wer das Gerät wechselt, kann in den Einstellungen eine Sicherungsdatei erstellen und sie auf dem
 neuen Handy wieder laden. Was in der Datei liegt und wie der Umzug läuft:
 [docs/backup.md](docs/backup.md). Die optionale Cloud-Einrichtung steht in
-[docs/accounts.md](docs/accounts.md).
+[docs/accounts.md](docs/accounts.md). Die vollständige Datenschutz-Erklärung, wie sie im Store
+verlinkt wird, steht in [docs/datenschutz.md](docs/datenschutz.md).
+
+## Lizenz
+
+Der Quellcode steht unter der **Apache-Lizenz 2.0** ([LICENSE](LICENSE)). Du darfst die App
+weitergeben und verändern, solange Copyright- und Lizenzhinweis erhalten bleiben. Die Inhalte
+(Sätze, Erklärungen, Dialoge) stammen aus diesem Projekt; die englischen Sätze sind für den
+Übungsbetrieb geschrieben, nicht aus einem Lehrwerk übernommen.
 
 ## Grenzen
 
