@@ -1,0 +1,14 @@
+# Statischer Build: keine Funktionen, kein Server. Netlify liefert nur den Ordner dist aus.
+[build]
+  base = "website"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Die Datenschutz-Seite liegt als Verzeichnis vor; /datenschutz bekommt so seine saubere Adresse.
+[[redirects]]
+  from = "/datenschutz"
+  to = "/datenschutz/index.html"
+  status = 200

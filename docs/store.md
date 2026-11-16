@@ -49,7 +49,7 @@ Vor dem Hochladen:
   sechs Teilen statt eines roten Kreuzes. Ohne Konto, ohne Werbung, ohne Serien. Ein Konto ist
   optional und nur für die Cloud-Sicherung nötig.
 - **Kategorie:** Lernen / Bildung
-- **Zielgruppe:** Erwachsene, besonders Menschen ab 60. Kein Kinderangebot, keine Inhalte für
+- **Zielgruppe:** Erwachsene jeden Alters, die ohne Druck lernen wollen. Kein Kinderangebot, keine Inhalte für
   Kinder unter 13.
 - **Screenshots:** Startseite, Lektion (Hören), Sprechaufgabe mit Rückmeldung, Fehlerkarte,
   Profil, Suche. je 1080 × 2280 px.
@@ -83,3 +83,131 @@ optionale Konto-Nutzung deshalb als Datenübertragung angegeben werden.
   ([accounts.md](accounts.md)).
 - Keine Analytics und keine Crash-Berichte. Fehler werden über die Test-Checkliste gefunden.
 - Kein Abo, keine Käufe.
+
+---
+
+# Play-Store-Paket für 2.0
+
+Alles hier ist zum Kopieren gedacht. Die Grafiken liegen in [`store/`](../store), die
+Screenshots sind echte Aufnahmen aus der signierten App (1080 × 2280).
+
+## 6. Dateien für die Play Console
+
+| Feld in der Konsole | Datei / Wert |
+|---|---|
+| App-Bundle | `github-vorbereitung/v2.0/sprachgefuehl-2.0.aab` |
+| App-Symbol (512 × 512) | `store/icon-512.png` |
+| Feature-Grafik (1024 × 500) | `store/feature-1024x500.png` |
+| Telefon-Screenshots (1080 × 2280) | `store/screenshots/1-start.png` … `6-sammlung.png` |
+| Datenschutz-URL | `https://sprachgefuehl.netlify.app/datenschutz` |
+
+## 7. Texte zum Einfügen
+
+**App-Name (30 Zeichen):**
+
+```
+Sprachgefühl
+```
+
+**Kurzbeschreibung (80 Zeichen):**
+
+```
+Englisch verstehen und selbst sprechen – ruhig, offline, ohne Zeitdruck.
+```
+
+**Vollständige Beschreibung (max. 4000 Zeichen):**
+
+```
+Sprachgefühl ist eine ruhige Englisch-App für Erwachsene, die im Alltag sprechen wollen – nicht
+für Punktesammler.
+
+Jede Lektion beginnt mit einem kurzen Gespräch aus dem Alltag: beim Arzt, an der Tür, im Laden,
+am Telefon. Du hörst es in zwei Tempi, liest die Übersetzung, wenn du willst, und erkennst die Form,
+die dahintersteckt – auf Deutsch erklärt, mit dem Kontrast zur eigenen Sprache.
+
+Dann sprichst du selbst: nachsprechen, Lücken füllen, den Satz bauen, in eine neue Situation
+übertragen. Die App hört zu und antwortet in drei Stufen statt mit rotem Kreuz. Bei einem Fehler
+gibt es eine Erklärung in sechs Teilen: was passiert ist, warum es anders ist, wie es richtig geht,
+einen Merkanker, eine Checkliste fürs nächste Mal und den nächsten Schritt.
+
+Was die App besonders macht:
+
+• Kein Zeitdruck, keine Herzen, keine Rangliste. Ein Pausentag nimmt nichts weg.
+• Offline nutzbar. Ohne Konto verlässt nichts das Gerät; die Internet-Berechtigung wird nur für
+die freiwillige Cloud-Sicherung gebraucht.
+• Keine Werbung, keine Analytics, keine Abos.
+• Fünf Bereiche statt einer Zahl: Hören, Grammatik, Bausteine, Sprechen, Verknüpfen – jeder mit
+  einer Stufe in Worten und dem nächsten Schritt.
+• Ein Sprachgarten, der wächst und nie verwelkt.
+• Große Schrift, ruhige Farben, heller und dunkler Modus, gemessene Kontraste.
+• Eigene Aufnahmen zum Vergleichen mit der Modellstimme.
+• Fortschritt auf ein neues Handy: über eine Sicherungsdatei oder ein optionales Konto.
+
+15 Kapitel, 52 Situationen, 186 Lektionen: Gesundheit, Leute und Small Talk, Einkaufen und Essen,
+Unterwegs, Alltag und Zuhause, Behörden und Termine, Feste und Einladen, Arbeit und Büro, Reisen,
+Wohnen und Nachbarn, Telefon und Digitales, Sport und Freizeit, Notfälle – dazu eine Werkstatt für
+Grammatik, Klangpaare und Zahlen.
+
+Spracherkennung und Stimme kommen vom Gerät; sie klingen je nach Handy unterschiedlich. Die App
+ersetzt kein echtes Gespräch und keinen Kurs – sie übt den Moment davor.
+```
+
+**Was ist neu (Version 2.0):**
+
+```
+Version 2.0 macht die App fertig für den Alltag:
+
+• Dunkelmodus überarbeitet: gemessene Kontraste (mindestens 4,5:1 für Text, 3:1 für Kanten und
+  Symbole), eigene Gartenfarben für beide Darstellungen.
+• Sprachprofil: Bereich und Stufe stehen jetzt untereinander und überlagern sich nicht mehr.
+• Standortbestimmung: der Fortschrittsbalken ist im Dunkeln sichtbar.
+• Schalter, Textfelder und Dialoge folgen der warmen Farbwelt statt der System-Violetttöne.
+• 321 automatische Tests, 47 Testklassen, Kontrast-Wächter für hell und dunkel.
+```
+
+## 8. Data Safety – Antworten je Frage
+
+| Frage | Antwort |
+|---|---|
+| Erhebt oder teilt die App Nutzerdaten? | Ja, aber nur bei freiwilligem Konto: E-Mail-Adresse, Lernstand, optional Aufnahmen. Ohne Konto: nein. |
+| Zweck | App-Funktionalität, Kontoverwaltung, Sicherung. Keine Werbung, keine Analyse. |
+| Wird die Übertragung verschlüsselt? | Ja, HTTPS/TLS. |
+| Kann die Nutzerin die Löschung verlangen? | Ja, direkt in der App („Konto löschen" bzw. „Fortschritt zurücksetzen"). |
+| Mikrofon | Ja, nur während einer Sprechaufgabe; Aufnahmen bleiben lokal, außer Cloud-Sync ist aktiv. |
+| Standort, Kontakte, Fotos, Werbe-ID | Nein, nicht verwendet. |
+| Datenverkauf | Nein. |
+
+## 9. Datenschutz-URL für die Konsole
+
+Die Erklärung liegt als [datenschutz.md](datenschutz.md) im Repo und wird auf der Produktseite
+ausgeliefert:
+
+1. Adresse prüfen: `https://sprachgefuehl.netlify.app/datenschutz`
+2. Diesen Link im Play-Formular „Datenschutzrichtlinie" eintragen.
+3. Änderungen nur in [datenschutz.md](datenschutz.md) vornehmen – die Seite wird beim nächsten
+   Website-Build daraus erzeugt, es gibt keine zweite Textfassung.
+
+## 10. Inhaltsbewertung (Fragebogen)
+
+| Frage | Antwort |
+|---|---|
+| Gewalt, Angst, Sex, Drogen, Glücksspiel | nein |
+| Nutzerinteraktion, Chats, Standortfreigabe | nein |
+| Käufe | nein |
+| Werbung | nein |
+| Datenerhebung | nur freiwilliges Konto (siehe Data Safety) |
+
+Erwartetes Ergebnis: freigegeben ab 0/6 bzw. USK 0, „Für alle Altersgruppen".
+
+## 11. Closed Test – was Google verlangt
+
+Neue private Entwicklerkonten müssen vor der Produktionsfreigabe **12 Tester über 14 Tage**
+begleiten. Praktisch heißt das:
+
+1. Konto anlegen (25 $ einmalig), Identität bestätigen lassen.
+2. In der Konsole: **Testing → Closed testing → Create track**, AAB hochladen.
+3. 12 Personen per E-Mail-Liste einladen, sie installieren über den Test-Link.
+4. 14 Tage warten, in denen die App bei mindestens einer Person installiert bleibt.
+5. Danach **Apply for production** – Google prüft einige Tage.
+
+Bis dahin bleibt der GitHub-Release der Weg, der sofort funktioniert.

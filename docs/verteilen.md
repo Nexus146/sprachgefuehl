@@ -192,16 +192,16 @@ neuen Update wieder, lässt sich aber nicht abkürzen.
 ## Bei jedem Update
 
 1. **Version hochzählen** in [app/build.gradle.kts](../app/build.gradle.kts):
-   `versionCode = 2`, `versionName = "1.1"`. Ohne neue `versionCode` erkennt Obtainium kein
-   Update – Android lehnt es sonst irgendwann ab.
+   `versionCode = 9`, `versionName = "2.1"`. Ohne neue `versionCode` erkennt Obtainium kein
+   Update – Android lehnt es sonst irgendwann ab. (2.0 hat `versionCode 8`.)
 2. Release bauen wie in Schritt 2.
-3. GitHub → **Releases → Draft a new release**: Tag `v1.1`, Titel `Version 1.1`, ein Satz dazu,
+3. GitHub → **Releases → Draft a new release**: Tag `v2.1`, Titel `Version 2.1`, ein Satz dazu,
    neue APK anhängen, **publish**.
 4. Auf dem Handy: Obtainium meldet „Update verfügbar“ oder installiert selbst. Tipp auf
    **Aktualisieren** – **nicht** deinstallieren.
 
 Kontrolle, welche Version installiert ist: in der App **Einstellungen → Über** steht
-„Sprachgefühl 1.1 · offline nutzbar …“. Diese Zeile liest sich am Telefon vor, wenn du wissen
+„Sprachgefühl 2.0 · offline nutzbar …“. Diese Zeile liest sich am Telefon vor, wenn du wissen
 willst, ob das Update angekommen ist.
 
 ---

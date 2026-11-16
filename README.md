@@ -136,6 +136,7 @@ store/                        Icon 512, Feature-Grafik 1024×500, Store-Screensh
 fastlane/metadata/android/    Titel, Beschreibungen und Changelog für F-Droid
 docs/                         Design, Prüfbogen, Test-Checkliste, Store-Texte, Datenschutz,
                               F-Droid, Verteilen
+website/                      Produktseite (Vite + React, TypeScript): Startseite und Datenschutz
 LICENSE                       Apache-2.0
 ```
 
@@ -245,6 +246,25 @@ deutscher Prüfbogen mit allen Sätzen – zum Gegenlesen mit Muttersprachlern.
 - **Kein R8/Minify.** Die Release-APK ist mit 14,6 MB klein genug, und ein nachträglich
   eingeschalteter Verkleinerer könnte zur Laufzeit brechen – in einer Release-Runde kein Risiko,
   das man eingeht. Bleibt als Aufgabe für eine spätere Version mit eigener Testrunde.
+
+## Website
+
+Die Produktseite liegt in [website/](website) und ist öffentlich erreichbar:
+<https://sprachgefuehl.netlify.app> – die Datenschutz-Erklärung unter
+<https://sprachgefuehl.netlify.app/datenschutz>. Sie zeigt den Garten, den Ablauf einer Lektion
+und die Kapitel; Version, Kapitelzahl, Aufgabenarten und Mindest-Android liest sie beim Bauen aus
+den Projektdateien, statt sie zu wiederholen. Der Datenschutz-Text ist keine zweite Fassung,
+sondern wird aus [docs/datenschutz.md](docs/datenschutz.md) erzeugt.
+
+```bash
+cd website
+npm install
+npm run dev       # lokale Vorschau auf http://localhost:5173
+npm run build     # Inhalte erzeugen, Typen prüfen, nach website/dist bauen
+```
+
+Ausgeliefert wird der Ordner `website/dist` über Netlify; die Einstellungen stehen in
+`website/netlify.toml`. Ein Deploy besteht nur aus diesem Ordner – die Seite braucht keinen Server.
 
 ## Datenschutz
 

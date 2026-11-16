@@ -1,0 +1,259 @@
+/* Farben, Schrift und Abstände kommen aus der App (ui/theme/Theme.kt, docs/design.md). */
+
+@font-face {
+  font-family: 'Lexend';
+  src: url('/fonts/lexend.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Atkinson';
+  src: url('/fonts/atkinson_regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Atkinson';
+  src: url('/fonts/atkinson_bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --cream: #fbf7f1;
+  --paper: #ffffff;
+  --sand: #f0e9de;
+  --sage: #3f6b4f;
+  --sage-dark: #2c4c38;
+  --sage-soft: #e3ede3;
+  --terracotta: #b85c33;
+  --terracotta-soft: #f6e3d8;
+  --ink: #23201c;
+  --ink-soft: #5a544c;
+  --ink-faint: #8a8175;
+  --line: #e0d7c9;
+  --line-strong: #cfc3af;
+
+  --bg: var(--cream);
+  --surface: var(--paper);
+  --surface-alt: var(--sand);
+  --text: var(--ink);
+  --muted: var(--ink-soft);
+  --faint: var(--ink-faint);
+  --accent: var(--sage);
+  --accent-strong: var(--sage-dark);
+  --accent-soft: var(--sage-soft);
+  --warm: var(--terracotta);
+  --warm-soft: var(--terracotta-soft);
+
+  --garden-stem: #3f6b4f;
+  --garden-leaf: #4a7a58;
+  --garden-pot: #e4c6b6;
+  --garden-bloom: #de7448;
+
+  --radius: 24px;
+  --radius-sm: 16px;
+  --border: 1.5px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 120ms;
+  --base: 220ms;
+  --slow: 380ms;
+  --garden: 900ms;
+
+  --fs-body: 19px;
+  --fs-small: 16px;
+  --fs-micro: 14px;
+  --fs-h1: clamp(2.35rem, 5.4vw, 3.9rem);
+  --fs-h2: clamp(1.65rem, 3.2vw, 2.4rem);
+  --fs-h3: clamp(1.08rem, 1.5vw, 1.28rem);
+  --fs-lead: clamp(1.06rem, 1.45vw, 1.22rem);
+
+  --max: 1180px;
+  --measure: 34em;
+  --pad: clamp(20px, 4vw, 40px);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14150f;
+    --surface: #1e211a;
+    --surface-alt: #23271f;
+    --text: #f2eee5;
+    --muted: #c3bdb1;
+    --faint: #9c9689;
+    --accent: #9cc4a9;
+    --accent-strong: #d6ebdc;
+    --accent-soft: #2b3a2e;
+    --warm: #e0a07c;
+    --warm-soft: #3a2419;
+    --line: #3a3f33;
+    --line-strong: #4d5445;
+
+    --garden-stem: #9cc4a9;
+    --garden-leaf: #8fbd9f;
+    --garden-pot: #c39a6b;
+    --garden-bloom: #e8938c;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 92px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Atkinson, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: Lexend, Georgia, serif;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0 0 1em;
+  max-width: var(--measure);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+a {
+  color: var(--accent-strong);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+strong {
+  font-weight: 700;
+}
+
+ul,
+ol {
+  margin: 0 0 1em;
+  padding-left: 1.25em;
+  max-width: var(--measure);
+}
+
+li + li {
+  margin-top: 0.4em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.shell {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 100;
+  padding: 12px 18px;
+  border-radius: 100px;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top var(--base) var(--ease);
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Reveals: klein, ruhig, einmal. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 520ms var(--ease),
+    transform 520ms var(--ease);
+  transition-delay: var(--delay, 0ms);
+}
+
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
